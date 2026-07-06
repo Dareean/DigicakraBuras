@@ -1,49 +1,36 @@
-# DIGICAKRA — One-Stop QRIS Solution untuk UMKM Fotocopy Cakrawala
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-Proyek ini dikembangkan untuk mengintegrasikan pemesanan layanan cetak/fotokopi, pembelian ATK, pembayaran QRIS, pencatatan transaksi, monitoring stok, e-nota, dan program loyalitas pelanggan (stempel digital) dalam satu platform digital terintegrasi.
+## Getting Started
 
-## Struktur Direktori
+First, run the development server:
 
-- `/backend` — REST API berbasis Laravel.
-- `/frontend` — Customer Web App & Admin Dashboard berbasis Next.js (React).
-- `docker-compose.yml` — Konfigurasi environment database MySQL lokal.
-
-## Persyaratan Sistem
-
-Pastikan Anda memiliki tools berikut terinstal di mesin lokal Anda:
-1. Docker & Docker Compose
-2. PHP >= 8.1 & Composer (untuk menjalankan Laravel secara lokal jika tidak melalui Docker)
-3. Node.js >= 18 & npm (untuk menjalankan Next.js secara lokal)
-
-## Cara Memulai
-
-### 1. Menjalankan Database (Docker)
-Jalankan database MySQL menggunakan Docker Compose:
 ```bash
-docker compose up -d
-```
-Database akan berjalan di port `3306` dengan:
-- Database: `digicakra`
-- User: `digicakra_user`
-- Password: `digicakra_password`
-- Root Password: `root`
-
-### 2. Setup Backend (Laravel)
-Masuk ke direktori backend:
-```bash
-cd backend
-composer install
-cp .env.example .env
-php artisan key:generate
-php artisan migrate --seed
-php artisan serve
-```
-
-### 3. Setup Frontend (Next.js)
-Masuk ke direktori frontend:
-```bash
-cd frontend
-npm install
 npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
-Buka [http://localhost:3000](http://localhost:3000) di browser Anda.
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## Learn More
+
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
