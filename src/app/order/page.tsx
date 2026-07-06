@@ -12,6 +12,81 @@ interface CartItem {
   name: string;
 }
 
+const getPdfPageCount = async (file: File): Promise<number> => {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      try {
+        const arr = new Uint8Array(e.target?.result as ArrayBuffer);
+        const text = new TextDecoder("ascii").decode(arr);
+        const matches = text.match(/\/Count\s+(\d+)/g);
+        if (matches) {
+          const lastMatch = matches[matches.length - 1];
+          const match = lastMatch.match(/\d+/);
+          if (match) {
+            resolve(parseInt(match[0], 10));
+            return;
+          }
+        }
+        const pageTypeMatches = text.match(/\/Type\s*\/Page\b/g);
+        if (pageTypeMatches) {
+          resolve(pageTypeMatches.length);
+          return;
+        }
+        resolve(1);
+      } catch (err) {
+        resolve(1);
+      }
+    };
+    reader.onerror = () => resolve(1);
+    reader.readAsArrayBuffer(file);
+  });
+};
+
+const renderPdfThumbnails = async (file: File, maxPages = 16): Promise<string[]> => {
+  try {
+    const pdfjsLib = await new Promise<any>((resolve, reject) => {
+      if ((window as any).pdfjsLib) {
+        resolve((window as any).pdfjsLib);
+        return;
+      }
+      const script = document.createElement("script");
+      script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js";
+      script.onload = () => {
+        const pdfjs = (window as any).pdfjsLib;
+        pdfjs.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
+        resolve(pdfjs);
+      };
+      script.onerror = () => reject("Failed to load PDF.js");
+      document.head.appendChild(script);
+    });
+
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const numPages = Math.min(pdf.numPages, maxPages);
+    const previews: string[] = [];
+
+    for (let i = 1; i <= numPages; i++) {
+      const page = await pdf.getPage(i);
+      const viewport = page.getViewport({ scale: 0.18 }); // thumbnail scale
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d");
+      if (context) {
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        await page.render({ canvasContext: context, viewport }).promise;
+        previews.push(canvas.toDataURL());
+      } else {
+        previews.push("");
+      }
+    }
+    return previews;
+  } catch (err) {
+    console.error("Error generating thumbnails:", err);
+    return [];
+  }
+};
+
 export default function OrderConfig() {
   // Customer identity
   const [fullName, setFullName] = useState("");
@@ -21,6 +96,12 @@ export default function OrderConfig() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [mockFileName, setMockFileName] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Auto-calculated PDF details
+  const [originalTotalPages, setOriginalTotalPages] = useState<number>(0);
+  const [excludedPages, setExcludedPages] = useState<number[]>([]);
+  const [pagePreviews, setPagePreviews] = useState<string[]>([]);
+  const [hoveredPage, setHoveredPage] = useState<number>(1);
 
   // Load GSAP animations on mount
   useEffect(() => {
@@ -56,10 +137,32 @@ export default function OrderConfig() {
     }
   }, []);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
+      const file = e.target.files[0];
+      setSelectedFile(file);
       setMockFileName("");
+      setExcludedPages([]);
+      setPagePreviews([]);
+      setHoveredPage(1);
+      
+      if (file.type === "application/pdf") {
+        setLoading(true);
+        const count = await getPdfPageCount(file);
+        setOriginalTotalPages(count);
+        setPages(count);
+        
+        try {
+          const previews = await renderPdfThumbnails(file);
+          setPagePreviews(previews);
+        } catch (e) {
+          console.error(e);
+        }
+        setLoading(false);
+      } else {
+        setOriginalTotalPages(1);
+        setPages(1);
+      }
     }
   };
 
@@ -71,6 +174,31 @@ export default function OrderConfig() {
   const setMockFile = () => {
     setMockFileName("dokumen_skripsi_final.pdf");
     setSelectedFile(null);
+    setExcludedPages([]);
+    setPagePreviews([]);
+    setHoveredPage(1);
+    setOriginalTotalPages(8); // Mock skripsi as 8 pages
+    setPages(8);
+  };
+
+  const togglePageSelection = (pageNum: number) => {
+    setExcludedPages((prev) => {
+      let next;
+      if (prev.includes(pageNum)) {
+        next = prev.filter((p) => p !== pageNum);
+      } else {
+        next = [...prev, pageNum];
+      }
+      
+      // Ensure they don't exclude ALL pages (print at least 1)
+      if (next.length === originalTotalPages) {
+        alert("Anda harus mencetak minimal 1 halaman!");
+        return prev;
+      }
+      
+      setPages(originalTotalPages - next.length);
+      return next;
+    });
   };
 
   // Calculate prices
@@ -130,6 +258,10 @@ export default function OrderConfig() {
       if (hasJilid) addons.push({ addonType: "jilid", price: 5000 });
       if (hasLaminating) addons.push({ addonType: "laminating", price: 4000 });
 
+      const printedPages = Array.from({ length: originalTotalPages })
+        .map((_, i) => i + 1)
+        .filter((p) => !excludedPages.includes(p));
+
       orderItems.push({
         itemType: "print_doc",
         productId: null,
@@ -140,6 +272,7 @@ export default function OrderConfig() {
           pages: pages,
           color: colorType,
           fileName: mockFileName || selectedFile?.name,
+          printedPages: printedPages.length > 0 ? printedPages : [1],
         },
         addons,
       });
@@ -280,34 +413,138 @@ export default function OrderConfig() {
 
             {/* Display Selected File Details */}
             {(selectedFile || mockFileName) && (
-              <div className="p-4 bg-slate-50 rounded-lg border border-slate-150 flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-red-100 text-red-600 rounded">
-                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              <div className="space-y-4">
+                <div className="p-4 bg-slate-50 rounded-lg border border-slate-150 flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-red-100 text-red-600 rounded">
+                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-slate-800 truncate max-w-[240px] sm:max-w-[300px]">
+                        {selectedFile ? selectedFile.name : mockFileName}
+                      </p>
+                      <p className="text-xs text-slate-400 font-medium mt-0.5">
+                        {selectedFile ? `${(selectedFile.size / 1024).toFixed(1)} KB` : "1.2 MB"}
+                        {originalTotalPages > 0 && ` • Total: ${originalTotalPages} halaman`}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedFile(null);
+                      setMockFileName("");
+                      setOriginalTotalPages(0);
+                      setExcludedPages([]);
+                      setPages(1);
+                    }}
+                    className="text-slate-400 hover:text-red-500"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-800 truncate max-w-[300px]">
-                      {selectedFile ? selectedFile.name : mockFileName}
-                    </p>
-                    <p className="text-xs text-slate-400">
-                      {selectedFile ? `${(selectedFile.size / 1024).toFixed(1)} KB` : "1.2 MB"}
-                    </p>
-                  </div>
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedFile(null);
-                    setMockFileName("");
-                  }}
-                  className="text-slate-400 hover:text-red-500"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
+
+                {/* Visual Page Excluder */}
+                {originalTotalPages > 1 && (
+                  <div className="p-4 bg-white rounded-lg border border-slate-200 space-y-4">
+                    <div>
+                      <span className="text-xs font-bold text-slate-700 uppercase tracking-wide block">Pilih Halaman yang Dicetak</span>
+                      <p className="text-[10px] text-slate-400 mt-0.5">Klik halaman untuk mengecualikan dari cetakan. Arahkan kursor untuk pratinjau besar.</p>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
+                      
+                      {/* Left: Thumbnail Grid */}
+                      <div className="md:col-span-3 grid grid-cols-3 sm:grid-cols-5 gap-3">
+                        {Array.from({ length: originalTotalPages }).map((_, idx) => {
+                          const pageNum = idx + 1;
+                          const isIncluded = !excludedPages.includes(pageNum);
+                          const previewImg = pagePreviews[idx];
+                          
+                          return (
+                            <button
+                              key={pageNum}
+                              type="button"
+                              onClick={() => togglePageSelection(pageNum)}
+                              onMouseEnter={() => setHoveredPage(pageNum)}
+                              className={`flex flex-col items-center justify-between p-2 h-32 border rounded-md transition-all relative overflow-hidden group ${
+                                isIncluded
+                                  ? "bg-white border-red-500 shadow-sm ring-1 ring-red-400"
+                                  : "bg-slate-50 border-slate-200 opacity-60"
+                              }`}
+                            >
+                              {/* Header */}
+                              <div className="w-full flex justify-between items-center text-[9px] text-slate-400 border-b border-slate-100 pb-1 z-10 bg-white/90 backdrop-blur-[1px]">
+                                <span className="font-bold">Hal {pageNum}</span>
+                                <span className={`w-1.5 h-1.5 rounded-full ${isIncluded ? 'bg-red-500' : 'bg-slate-300'}`}></span>
+                              </div>
+                              
+                              {/* Thumbnail preview body */}
+                              <div className="flex-grow flex items-center justify-center w-full relative my-1.5 bg-slate-50 border border-slate-100 rounded-sm overflow-hidden h-16">
+                                {previewImg ? (
+                                  <img src={previewImg} className="w-full h-full object-contain" alt={`Hal ${pageNum}`} />
+                                ) : (
+                                  // Fallback simulated document lines
+                                  <div className="flex flex-col justify-around h-full w-full p-1 opacity-20">
+                                    <div className="h-0.5 bg-slate-800 rounded w-3/4"></div>
+                                    <div className="h-0.5 bg-slate-800 rounded w-full"></div>
+                                    <div className="h-0.5 bg-slate-800 rounded w-5/6"></div>
+                                    <div className="h-0.5 bg-slate-800 rounded w-2/3"></div>
+                                  </div>
+                                )}
+                                <span className={`absolute text-xs font-black ${isIncluded ? 'text-slate-800 bg-white/75 px-1 py-0.5 rounded shadow-sm' : 'text-slate-400'}`}>
+                                  {pageNum}
+                                </span>
+                              </div>
+
+                              {/* Footer status */}
+                              <span className={`text-[9px] font-extrabold uppercase z-10 ${isIncluded ? 'text-red-600' : 'text-slate-400'}`}>
+                                {isIncluded ? 'Cetak' : 'Lewati'}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Right: Large Page Preview Panel */}
+                      <div className="md:col-span-1 bg-slate-50 p-4 rounded-lg border border-slate-150 flex flex-col items-center justify-center space-y-3 h-52 md:h-auto">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide text-center">Detail Pratinjau</span>
+                        
+                        <div className="w-28 h-36 bg-white border border-slate-200 rounded shadow-md relative overflow-hidden flex flex-col justify-between p-2">
+                          <span className="text-[8px] font-bold text-slate-400 border-b border-slate-100 pb-0.5">Halaman {hoveredPage}</span>
+                          
+                          <div className="flex-grow flex items-center justify-center w-full relative bg-slate-50 rounded-sm overflow-hidden my-2">
+                            {pagePreviews[hoveredPage - 1] ? (
+                              <img src={pagePreviews[hoveredPage - 1]} className="w-full h-full object-contain" alt={`Preview Hal ${hoveredPage}`} />
+                            ) : (
+                              // Detailed mock document text lines
+                              <div className="flex flex-col justify-around h-full w-full p-2.5 opacity-25">
+                                <div className="h-1 bg-slate-800 rounded w-1/2 mb-1"></div>
+                                <div className="h-0.5 bg-slate-800 rounded w-3/4"></div>
+                                <div className="h-0.5 bg-slate-800 rounded w-full"></div>
+                                <div className="h-0.5 bg-slate-800 rounded w-5/6"></div>
+                                <div className="h-0.5 bg-slate-800 rounded w-2/3"></div>
+                                <div className="h-0.5 bg-slate-800 rounded w-full"></div>
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div className="flex justify-between items-center text-[9px] font-bold">
+                            <span className="text-slate-400">Hal {hoveredPage}</span>
+                            <span className={!excludedPages.includes(hoveredPage) ? "text-red-600" : "text-slate-400"}>
+                              {!excludedPages.includes(hoveredPage) ? "Status: Cetak" : "Status: Lewati"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </section>
@@ -326,8 +563,16 @@ export default function OrderConfig() {
                   min="1"
                   value={pages}
                   onChange={(e) => setPages(Math.max(1, Number(e.target.value)))}
-                  className="w-full px-4 h-11 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm bg-white font-medium"
+                  className={`w-full px-4 h-11 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm font-medium ${
+                    originalTotalPages > 1 ? "bg-slate-100 text-slate-500 cursor-not-allowed" : "bg-white"
+                  }`}
+                  readOnly={originalTotalPages > 1}
                 />
+                {originalTotalPages > 1 && (
+                  <span className="text-[10px] text-red-500 block mt-1 font-semibold">
+                    *Jumlah halaman dihitung otomatis dari pilihan halaman aktif Anda di atas.
+                  </span>
+                )}
               </div>
 
               <div>

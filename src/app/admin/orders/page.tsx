@@ -90,6 +90,39 @@ export default function AdminOrders() {
     }
   };
 
+  const sendWaNotification = (order: Order) => {
+    const waNum = order.customer?.whatsappNumber;
+    if (!waNum) {
+      alert("Pelanggan tidak memiliki nomor WhatsApp!");
+      return;
+    }
+    
+    let formattedNum = waNum.replace(/[^0-9]/g, "");
+    if (formattedNum.startsWith("0")) {
+      formattedNum = "62" + formattedNum.slice(1);
+    }
+    
+    let message = "";
+    const name = order.customer?.name || "Pelanggan";
+    const code = order.orderCode;
+    
+    if (order.status === "diterima") {
+      message = `Halo ${name}, pesanan Anda (${code}) telah kami terima dan masuk dalam antrean proses cetak. Terima kasih! - Fotocopy Cakrawala`;
+    } else if (order.status === "diproses") {
+      message = `Halo ${name}, pesanan Anda (${code}) sedang dalam proses pengerjaan oleh staf kami. - Fotocopy Cakrawala`;
+    } else if (order.status === "siap_diambil") {
+      message = `Halo ${name}, kabar baik! Pesanan Anda (${code}) sudah selesai diproses dan SIAP DIAMBIL di toko. Silakan datang ke toko untuk mengambil. Terima kasih! - Fotocopy Cakrawala`;
+    } else if (order.status === "selesai") {
+      message = `Halo ${name}, transaksi Anda (${code}) telah selesai diambil. Terima kasih telah mempercayai Fotocopy Cakrawala! - Fotocopy Cakrawala`;
+    } else {
+      message = `Halo ${name}, terkait pesanan Anda (${code})... - Fotocopy Cakrawala`;
+    }
+    
+    const encodedText = encodeURIComponent(message);
+    const waUrl = `https://wa.me/${formattedNum}?text=${encodedText}`;
+    window.open(waUrl, "_blank");
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "menunggu_pembayaran":
@@ -255,9 +288,14 @@ export default function AdminOrders() {
                               {item.itemType === "atk" ? (item.productName || "Item ATK") : `Print: ${item.fileUrl}`}
                             </span>
                             {item.itemType === "print_doc" && (
-                              <p className="text-slate-400 text-[11px] mt-0.5">
-                                Spec: {item.spec.pages} Hal, {item.spec.color === "bw" ? "Hitam Putih" : "Warna"}
-                              </p>
+                              <div className="text-slate-400 text-[11px] mt-0.5 space-y-0.5">
+                                <p>Spec: {item.spec.pages} Hal, {item.spec.color === "bw" ? "Hitam Putih" : "Warna"}</p>
+                                {item.spec.printedPages && (
+                                  <p className="text-red-600 font-bold text-[10px]">
+                                    Halaman dicetak: {item.spec.printedPages.join(", ")}
+                                  </p>
+                                )}
+                              </div>
                             )}
                             
                             {/* Addons display */}
@@ -334,6 +372,15 @@ export default function AdminOrders() {
                       className="w-full py-1.5 px-3 bg-white border border-slate-200 text-red-600 hover:bg-red-50 rounded text-[11px] font-bold transition-all text-center"
                     >
                       Batalkan Pesanan
+                    </button>
+                  )}
+
+                  {order.customer?.whatsappNumber && (
+                    <button
+                      onClick={() => sendWaNotification(order)}
+                      className="w-full py-1.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[11px] font-bold transition-all text-center flex items-center justify-center gap-1.5 shadow-sm mt-1"
+                    >
+                      💬 Kirim Notif WA
                     </button>
                   )}
                   
