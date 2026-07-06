@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Link from "next/link";
+import gsap from "gsap";
 
 interface OrderDetail {
   id: number;
@@ -46,6 +47,26 @@ export default function CheckoutPayment() {
   const [qrPayload, setQrPayload] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
+
+  // GSAP Column animations when order details load
+  useEffect(() => {
+    if (!loading && order) {
+      gsap.fromTo(".checkout-anim-col",
+        { opacity: 0, y: 30 },
+        { opacity: 1, y: 0, duration: 0.6, stagger: 0.15, ease: "power2.out" }
+      );
+    }
+  }, [loading, order]);
+
+  // GSAP Elastic checkmark animation when payment status shifts to paid
+  useEffect(() => {
+    if (order && order.status !== "menunggu_pembayaran" && order.status !== "dibatalkan") {
+      gsap.fromTo(".success-checkmark-bounce",
+        { scale: 0, rotation: -45 },
+        { scale: 1, rotation: 0, duration: 0.8, ease: "elastic.out(1, 0.5)", delay: 0.2 }
+      );
+    }
+  }, [order?.status]);
 
   const fetchOrderDetails = () => {
     fetch(`/api/orders/${orderCode}`)
@@ -153,7 +174,7 @@ export default function CheckoutPayment() {
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full flex-grow grid grid-cols-1 md:grid-cols-2 gap-8">
         
         {/* Left Column: Order Summary */}
-        <div className="space-y-6">
+        <div className="checkout-anim-col opacity-0 space-y-6">
           <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm space-y-4">
             <div className="flex justify-between items-center border-b border-slate-100 pb-3">
               <span className="text-xs font-bold text-slate-400 uppercase">Ringkasan Pesanan</span>
@@ -227,7 +248,7 @@ export default function CheckoutPayment() {
         </div>
 
         {/* Right Column: QRIS Payment Box / Success State */}
-        <div>
+        <div className="checkout-anim-col opacity-0">
           {!isPaid ? (
             <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm text-center space-y-6 flex flex-col items-center">
               <div>
@@ -294,7 +315,7 @@ export default function CheckoutPayment() {
           ) : (
             /* SUCCESS STATE */
             <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm text-center space-y-6 flex flex-col items-center border-t-4 border-t-emerald-500">
-              <div className="p-3 bg-emerald-100 text-emerald-600 rounded-full animate-bounce">
+              <div className="success-checkmark-bounce p-3 bg-emerald-100 text-emerald-600 rounded-full">
                 <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                 </svg>

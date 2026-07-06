@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
+import gsap from "gsap";
 
 interface CustomerData {
   name: string;
@@ -38,6 +39,22 @@ function TrackingContent() {
   const [selectedNotaOrder, setSelectedNotaOrder] = useState<OrderItem | null>(null);
   const [notaData, setNotaData] = useState<any | null>(null);
   const [loadingNota, setLoadingNota] = useState(false);
+
+  // GSAP animation triggers when customer details populate
+  useEffect(() => {
+    if (customer) {
+      // Columns
+      gsap.fromTo(".tracking-anim-panel",
+        { opacity: 0, y: 30 },
+        { opacity: 1, y: 0, duration: 0.6, stagger: 0.15, ease: "power2.out", overwrite: "auto" }
+      );
+      // Stamps slots
+      gsap.fromTo(".stamp-anim-slot",
+        { scale: 0.6, opacity: 0 },
+        { scale: 1, opacity: 1, duration: 0.4, stagger: 0.05, ease: "back.out(1.5)", overwrite: "auto", delay: 0.1 }
+      );
+    }
+  }, [customer]);
 
   const fetchTrackingData = (waNumber: string) => {
     if (!waNumber.trim()) return;
@@ -167,7 +184,7 @@ function TrackingContent() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               
               {/* Left Column: Customer Profile & Stamps Board (1 Column width) */}
-              <div className="space-y-6 md:col-span-1">
+              <div className="tracking-anim-panel opacity-0 space-y-6 md:col-span-1">
                 <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm space-y-4">
                   <div className="border-b border-slate-100 pb-3">
                     <span className="text-[10px] font-bold text-slate-400 uppercase">Profil Pelanggan</span>
@@ -190,7 +207,7 @@ function TrackingContent() {
                         return (
                           <div
                             key={idx}
-                            className={`aspect-square rounded-full flex items-center justify-center border text-[10px] font-bold transition-all relative ${
+                            className={`stamp-anim-slot opacity-0 aspect-square rounded-full flex items-center justify-center border text-[10px] font-bold transition-all relative ${
                               isStamped
                                 ? "bg-red-50 border-red-500 text-red-600 shadow-sm"
                                 : "bg-slate-50 border-slate-200 text-slate-300"
@@ -222,7 +239,7 @@ function TrackingContent() {
               </div>
 
               {/* Right Column: Orders status tracking timeline (2 Columns width) */}
-              <div className="space-y-6 md:col-span-2">
+              <div className="tracking-anim-panel opacity-0 space-y-6 md:col-span-2">
                 <h3 className="text-base font-bold text-slate-800">Daftar Pesanan Anda</h3>
 
                 {orders.length === 0 ? (

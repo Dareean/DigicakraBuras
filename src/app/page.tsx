@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Link from "next/link";
+import gsap from "gsap";
 
 interface Product {
   id: number;
@@ -20,6 +21,28 @@ export default function Home() {
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("Semua");
   const [cart, setCart] = useState<{ [key: number]: number }>({});
+
+  // Hero & Steps animations on mount
+  useEffect(() => {
+    gsap.fromTo(".hero-anim-item", 
+      { opacity: 0, y: 35 }, 
+      { opacity: 1, y: 0, duration: 0.8, stagger: 0.12, ease: "power2.out" }
+    );
+    gsap.fromTo(".step-anim-card", 
+      { opacity: 0, y: 40 }, 
+      { opacity: 1, y: 0, duration: 0.6, stagger: 0.12, ease: "power2.out", delay: 0.3 }
+    );
+  }, []);
+
+  // Catalog anim on products load/filter
+  useEffect(() => {
+    if (!loading && filteredProducts.length > 0) {
+      gsap.fromTo(".catalog-anim-card", 
+        { opacity: 0, y: 20 }, 
+        { opacity: 1, y: 0, duration: 0.4, stagger: 0.05, ease: "power1.out", overwrite: "auto" }
+      );
+    }
+  }, [loading, filteredProducts]);
 
   useEffect(() => {
     fetch("/api/products")
@@ -113,19 +136,19 @@ export default function Home() {
       <Navbar />
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-red-950 text-white py-20 px-4 sm:px-6 lg:px-8">
+      <section id="layanan" className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-red-950 text-white py-20 px-4 sm:px-6 lg:px-8">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(239,68,68,0.15),transparent_50%)]"></div>
         <div className="max-w-4xl mx-auto text-center relative z-10">
-          <span className="inline-flex items-center rounded-full bg-red-500/10 px-3 py-1 text-sm font-medium text-red-400 ring-1 ring-inset ring-red-500/20 mb-4 animate-pulse">
+          <span className="hero-anim-item opacity-0 inline-flex items-center rounded-full bg-red-500/10 px-3 py-1 text-sm font-medium text-red-400 ring-1 ring-inset ring-red-500/20 mb-4 animate-pulse">
             Inovasi Digital Pembayaran BRIDA 2026
           </span>
-          <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight mb-6">
+          <h1 className="hero-anim-item opacity-0 text-4xl sm:text-5xl font-extrabold tracking-tight mb-6">
             Solusi Satu Pintu Fotokopi & ATK Cakrawala
           </h1>
-          <p className="text-lg sm:text-xl text-slate-300 mb-8 max-w-2xl mx-auto leading-relaxed">
+          <p className="hero-anim-item opacity-0 text-lg sm:text-xl text-slate-300 mb-8 max-w-2xl mx-auto leading-relaxed">
             Upload file Anda dari rumah, bayar dengan QRIS secara instan, lacak status secara real-time, dan ambil pesanan Anda saat sudah siap!
           </p>
-          <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
+          <div className="hero-anim-item opacity-0 flex flex-col sm:flex-row justify-center items-center gap-4">
             <Link
               href="/order"
               className="w-full sm:w-auto inline-flex justify-center items-center px-8 py-3 text-base font-semibold text-white bg-red-600 rounded-md hover:bg-red-700 transition-all shadow-lg hover:shadow-red-900/30"
@@ -171,7 +194,7 @@ export default function Home() {
               desc: "Pantau status pesanan lewat nomor WhatsApp. Ambil di toko tanpa perlu mengantre.",
             },
           ].map((item, idx) => (
-            <div key={idx} className="bg-white rounded-lg p-6 border border-slate-200 shadow-sm relative group hover:border-red-300 transition-all">
+            <div key={idx} className="step-anim-card opacity-0 bg-white rounded-lg p-6 border border-slate-200 shadow-sm relative group hover:border-red-300 transition-all">
               <span className="text-4xl font-extrabold text-red-100 group-hover:text-red-200 transition-all block mb-4">
                 {item.step}
               </span>
@@ -256,7 +279,7 @@ export default function Home() {
             {filteredProducts.map((p) => {
               const qtyInCart = cart[p.id] || 0;
               return (
-                <div key={p.id} className="bg-white rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between overflow-hidden hover:shadow-md transition-all">
+                <div key={p.id} className="catalog-anim-card opacity-0 bg-white rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between overflow-hidden hover:shadow-md transition-all">
                   <div className="p-6">
                     <span className="text-[10px] font-extrabold uppercase tracking-widest text-red-600 block mb-1">
                       {p.category}

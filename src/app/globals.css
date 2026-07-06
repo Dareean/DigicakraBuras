@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 4.5rem; /* Prevents sticky navbar from covering section titles */
+}
+
 @theme {
   --color-primary: #ef4444;
   --color-primary-dark: #dc2626;

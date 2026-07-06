@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Navbar from "@/components/Navbar";
+import gsap from "gsap";
 
 interface CartItem {
   itemType: string;
@@ -20,6 +21,14 @@ export default function OrderConfig() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [mockFileName, setMockFileName] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load GSAP animations on mount
+  useEffect(() => {
+    gsap.fromTo(".form-section-anim", 
+      { opacity: 0, y: 25 }, 
+      { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: "power2.out" }
+    );
+  }, []);
 
   // Print options
   const [pages, setPages] = useState<number>(1);
@@ -187,14 +196,14 @@ export default function OrderConfig() {
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full flex-grow">
         {/* Title */}
-        <div className="mb-8">
+        <div className="form-section-anim opacity-0 mb-8">
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Konfigurasi Pesanan</h1>
           <p className="text-slate-500 text-sm mt-1">Lengkapi detail pesanan Anda untuk proses yang lebih cepat.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8 bg-white p-8 rounded-lg border border-slate-200 shadow-sm">
           {/* Identitas Pelanggan */}
-          <section className="space-y-4">
+          <section className="form-section-anim opacity-0 space-y-4">
             <h2 className="text-lg font-bold text-slate-800 border-b border-slate-100 pb-2">Identitas Pelanggan</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -228,7 +237,7 @@ export default function OrderConfig() {
           </section>
 
           {/* Unggah Berkas */}
-          <section className="space-y-4">
+          <section className="form-section-anim opacity-0 space-y-4">
             <h2 className="text-lg font-bold text-slate-800 border-b border-slate-100 pb-2">Unggah Berkas</h2>
             
             <div 
@@ -304,7 +313,7 @@ export default function OrderConfig() {
           </section>
 
           {/* Opsi Cetak */}
-          <section className="space-y-4">
+          <section className="form-section-anim opacity-0 space-y-4">
             <h2 className="text-lg font-bold text-slate-800 border-b border-slate-100 pb-2">Opsi Cetak</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -391,7 +400,7 @@ export default function OrderConfig() {
 
           {/* ATK Items Summary (If any) */}
           {atkItems.length > 0 && (
-            <section className="space-y-4">
+            <section className="form-section-anim opacity-0 space-y-4">
               <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                 <h2 className="text-lg font-bold text-slate-800">ATK yang Dipesan</h2>
                 <button
@@ -422,7 +431,7 @@ export default function OrderConfig() {
           )}
 
           {/* Notes */}
-          <section className="space-y-2">
+          <section className="form-section-anim opacity-0 space-y-2">
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
               Catatan Pengambilan / Pesanan (Opsional)
             </label>
@@ -435,7 +444,7 @@ export default function OrderConfig() {
           </section>
 
           {/* Price Summary */}
-          <section className="bg-red-50 border border-red-100 p-6 rounded-lg space-y-3">
+          <section className="form-section-anim opacity-0 bg-red-50 border border-red-100 p-6 rounded-lg space-y-3">
             <h3 className="font-bold text-red-950 text-sm">Rincian Estimasi Biaya</h3>
             
             <div className="space-y-1.5 text-xs text-red-900 border-b border-red-200/50 pb-3">

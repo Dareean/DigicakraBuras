@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import Link from "next/link";
+import gsap from "gsap";
 
 interface DashboardSummary {
   todayRevenue: number;
@@ -28,6 +29,22 @@ export default function AdminDashboard() {
         setLoading(false);
       });
   }, []);
+
+  // GSAP animation when summary loads
+  useEffect(() => {
+    if (!loading && summary) {
+      // Summary cards
+      gsap.fromTo(".dash-anim-card",
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, ease: "power2.out", overwrite: "auto" }
+      );
+      // Sales chart bars
+      gsap.fromTo(".chart-anim-bar",
+        { scaleY: 0 },
+        { scaleY: 1, duration: 0.8, ease: "power2.out", transformOrigin: "bottom", stagger: 0.08, delay: 0.2, overwrite: "auto" }
+      );
+    }
+  }, [loading, summary]);
 
   if (loading) {
     return (
@@ -56,7 +73,7 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           
           {/* Card 1 */}
-          <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between h-32">
+          <div className="dash-anim-card opacity-0 bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between h-32">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pendapatan Hari Ini</span>
             <div className="mt-2">
               <span className="text-2xl font-extrabold text-slate-900 block">
@@ -67,7 +84,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* Card 2 */}
-          <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between h-32">
+          <div className="dash-anim-card opacity-0 bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between h-32">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pendapatan Bulan Ini</span>
             <div className="mt-2">
               <span className="text-2xl font-extrabold text-slate-900 block">
@@ -78,7 +95,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* Card 3 */}
-          <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between h-32">
+          <div className="dash-anim-card opacity-0 bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between h-32">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Antrean Pesanan Aktif</span>
             <div className="mt-2 flex justify-between items-baseline">
               <span className="text-3xl font-extrabold text-red-600">
@@ -91,7 +108,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* Card 4 */}
-          <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between h-32">
+          <div className="dash-anim-card opacity-0 bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between h-32">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pemberitahuan Stok Menipis</span>
             <div className="mt-2 flex justify-between items-baseline">
               <span className={`text-3xl font-extrabold ${summary?.lowStockItemsCount && summary.lowStockItemsCount > 0 ? "text-amber-600 animate-pulse" : "text-slate-700"}`}>
@@ -126,7 +143,7 @@ export default function AdminDashboard() {
                   {/* Bar */}
                   <div
                     style={{ height: `${heightPercent}%` }}
-                    className="w-8 bg-red-500 rounded-t group-hover:bg-red-600 transition-all shadow-sm flex items-end justify-center"
+                    className="chart-anim-bar w-8 bg-red-500 rounded-t group-hover:bg-red-600 transition-all shadow-sm flex items-end justify-center origin-bottom"
                   ></div>
                   
                   {/* Label */}

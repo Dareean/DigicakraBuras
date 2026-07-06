@@ -1,17 +1,51 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 export default function Navbar() {
   const pathname = usePathname();
+  const [activeSection, setActiveSection] = useState<string>("layanan");
 
   const navLinks = [
-    { name: "Layanan", href: "/" },
-    { name: "Promo", href: "/#promo" },
-    { name: "Cara Kerja", href: "/#cara-kerja" },
-    { name: "Tracking Pesanan", href: "/tracking" },
+    { name: "Layanan", href: "/#layanan", section: "layanan" },
+    { name: "Promo", href: "/#promo", section: "promo" },
+    { name: "Cara Kerja", href: "/#cara-kerja", section: "cara-kerja" },
+    { name: "Tracking Pesanan", href: "/tracking", section: "tracking" },
   ];
+
+  useEffect(() => {
+    if (pathname !== "/") return;
+
+    const sections = ["layanan", "promo", "cara-kerja"];
+    const observers = sections.map((id) => {
+      const el = document.getElementById(id);
+      if (!el) return null;
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              setActiveSection(id);
+            }
+          });
+        },
+        {
+          rootMargin: "-25% 0px -55% 0px", // Trigger when section occupies the upper-middle of viewport
+          threshold: 0.1,
+        }
+      );
+      observer.observe(el);
+      return { observer, el };
+    });
+
+    return () => {
+      observers.forEach((obs) => {
+        if (obs) obs.observer.unobserve(obs.el);
+      });
+    };
+  }, [pathname]);
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-sm">
@@ -27,7 +61,13 @@ export default function Navbar() {
           {/* Navigation Links */}
           <nav className="hidden md:flex space-x-8">
             {navLinks.map((link) => {
-              const isActive = pathname === link.href || (link.href.startsWith("/#") && pathname === "/");
+              let isActive = false;
+              if (link.section === "tracking") {
+                isActive = pathname === "/tracking";
+              } else if (pathname === "/") {
+                isActive = activeSection === link.section;
+              }
+
               return (
                 <Link
                   key={link.name}
