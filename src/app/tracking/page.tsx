@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import gsap from "gsap";
+import { Award } from "lucide-react";
 
 interface CustomerData {
   name: string;
@@ -214,9 +215,7 @@ function TrackingContent() {
                             }`}
                           >
                             {isStamped ? (
-                              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M2.166 11.383a1 1 0 011.09-.217 8.01 8.01 0 006.744 0 1 1 0 11.092 1.585 8 8 0 01-8.926.217zM10 3a1 1 0 011 1v1.17a8.001 8.001 0 014.223 3.523 1 1 0 11-1.732.999A5.996 5.996 0 0011 7.18V17a1 1 0 11-2 0V7.18a5.996 5.996 0 00-2.49 2.512 1 1 0 11-1.733-.999A8.001 8.001 0 019 5.17V4a1 1 0 011-1z" clipRule="evenodd" />
-                              </svg>
+                              <Award className="w-5 h-5 text-red-650" />
                             ) : (
                               idx + 1
                             )}

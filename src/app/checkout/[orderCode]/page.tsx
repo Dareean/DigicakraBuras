@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Link from "next/link";
 import gsap from "gsap";
+import { AlertTriangle, Clock, Check } from "lucide-react";
 
 interface OrderDetail {
   id: number;
@@ -36,6 +37,7 @@ interface OrderDetail {
     paymentMethod: string;
     qrString: string | null;
     status: string;
+    paymentGatewayRef: string | null;
   } | null;
 }
 
@@ -47,6 +49,10 @@ export default function CheckoutPayment() {
   const [qrPayload, setQrPayload] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
+
+  const [paymentMode, setPaymentMode] = useState<"dynamic" | "static">("dynamic");
+  const [receiptImage, setReceiptImage] = useState<string | null>(null);
+  const [uploadingReceipt, setUploadingReceipt] = useState(false);
 
   // GSAP Column animations when order details load
   useEffect(() => {
@@ -133,6 +139,44 @@ export default function CheckoutPayment() {
     }
   };
 
+  const handleReceiptChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setReceiptImage(event.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const submitManualPayment = async () => {
+    if (!receiptImage) {
+      alert("Pilih berkas bukti transfer terlebih dahulu!");
+      return;
+    }
+    setUploadingReceipt(true);
+    try {
+      const res = await fetch(`/api/orders/${orderCode}/manual-payment`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ receiptBase64: receiptImage }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        alert("Bukti pembayaran berhasil dikirim! Menunggu konfirmasi kasir.");
+        fetchOrderDetails();
+      } else {
+        alert(data.error || "Gagal mengirim bukti pembayaran");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Koneksi gagal");
+    } finally {
+      setUploadingReceipt(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col bg-slate-50">
@@ -150,10 +194,8 @@ export default function CheckoutPayment() {
       <div className="min-h-screen flex flex-col bg-slate-50">
         <Navbar />
         <div className="flex-grow flex flex-col items-center justify-center py-20 px-4 text-center">
-          <div className="p-3 bg-red-100 text-red-600 rounded-full mb-4">
-            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
+          <div className="p-3 bg-red-100 text-red-600 rounded-full mb-4 flex items-center justify-center">
+            <AlertTriangle className="w-8 h-8" />
           </div>
           <h2 className="text-xl font-bold text-slate-800">Pesanan Tidak Ditemukan</h2>
           <p className="text-slate-500 text-sm mt-1 mb-6">Pastikan kode order Anda sudah benar.</p>
@@ -250,75 +292,210 @@ export default function CheckoutPayment() {
         {/* Right Column: QRIS Payment Box / Success State */}
         <div className="checkout-anim-col opacity-0">
           {!isPaid ? (
-            <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm text-center space-y-6 flex flex-col items-center">
-              <div>
-                <span className="text-xs font-bold text-red-600 bg-red-50 px-2.5 py-1 rounded-full border border-red-100 uppercase tracking-wider">
-                  Menunggu Pembayaran
-                </span>
-                <h3 className="text-lg font-bold text-slate-800 mt-3">Pembayaran QRIS Dinamis</h3>
-                <p className="text-xs text-slate-400 mt-1">Silakan scan kode QRIS di bawah ini</p>
-              </div>
-
-              {/* QRIS Red Header Frame */}
-              <div className="border border-slate-200 rounded-lg overflow-hidden max-w-[270px] w-full shadow-md bg-white">
-                <div className="bg-red-600 p-2.5 flex items-center justify-between text-white font-extrabold text-[10px] tracking-widest">
-                  <span>QRIS</span>
-                  <span className="text-[7px] font-normal leading-none opacity-85">GPN / BANK INDONESIA</span>
+            order.payment?.paymentMethod === "manual_qris" && order.payment?.status === "pending" ? (
+              /* PENDING VERIFICATION STATE */
+              <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm text-center space-y-6 flex flex-col items-center border-t-4 border-t-amber-500">
+                <div className="p-3 bg-amber-100 text-amber-600 rounded-full animate-pulse flex items-center justify-center">
+                  <Clock className="w-10 h-10" />
                 </div>
                 
-                {/* QR Code Body */}
-                <div className="p-4 flex items-center justify-center bg-white border-b border-slate-100">
-                  {qrPayload ? (
-                    <img
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrPayload)}`}
-                      alt="QRIS QR Code"
-                      className="w-48 h-48"
-                    />
-                  ) : (
-                    <div className="w-48 h-48 bg-slate-50 animate-pulse flex items-center justify-center text-xs text-slate-400 rounded">
-                      Membuat QRIS...
+                <div>
+                  <h3 className="text-lg font-bold text-slate-800">Menunggu Verifikasi Pembayaran</h3>
+                  <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+                    Bukti transfer Anda telah terkirim ke kasir. Silakan tunggu antrean verifikasi atau tunjukkan layar ini langsung di kasir toko saat pengambilan.
+                  </p>
+                </div>
+
+                {order.payment?.paymentGatewayRef && (
+                  <div className="border border-slate-200 rounded p-2 bg-slate-50 max-w-[180px] w-full">
+                    <span className="text-[9px] text-slate-400 block mb-1 font-bold text-center">Bukti Anda:</span>
+                    <img src={order.payment.paymentGatewayRef} className="max-h-28 mx-auto object-contain rounded" alt="Bukti Transfer" />
+                  </div>
+                )}
+
+                <div className="w-full pt-4 border-t border-slate-100">
+                  <button 
+                    onClick={fetchOrderDetails} 
+                    className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-bold transition-all"
+                  >
+                    🔄 Segarkan Status
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* PAYMENT SELECTION STATE */
+              <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm text-center space-y-6 flex flex-col items-center">
+                
+                {/* Tab Switcher */}
+                <div className="flex bg-slate-100 p-1 rounded-md w-full">
+                  <button
+                    onClick={() => setPaymentMode("dynamic")}
+                    className={`flex-1 py-1.5 text-[11px] font-bold rounded transition-all ${
+                      paymentMode === "dynamic" ? "bg-white text-slate-850 shadow-sm" : "text-slate-500 hover:text-slate-800"
+                    }`}
+                  >
+                    QRIS Otomatis
+                  </button>
+                  <button
+                    onClick={() => setPaymentMode("static")}
+                    className={`flex-1 py-1.5 text-[11px] font-bold rounded transition-all ${
+                      paymentMode === "static" ? "bg-white text-slate-850 shadow-sm" : "text-slate-500 hover:text-slate-800"
+                    }`}
+                  >
+                    QRIS Manual (Scan QR Toko)
+                  </button>
+                </div>
+
+                {paymentMode === "dynamic" ? (
+                  /* DYNAMIC QRIS PANEL */
+                  <>
+                    <div>
+                      <span className="text-xs font-bold text-red-650 bg-red-50 px-2.5 py-1 rounded-full border border-red-100 uppercase tracking-wider">
+                        Menunggu Pembayaran
+                      </span>
+                      <h3 className="text-lg font-bold text-slate-800 mt-3">Pembayaran QRIS Dinamis</h3>
+                      <p className="text-xs text-slate-400 mt-1">Silakan scan kode QRIS di bawah ini</p>
                     </div>
-                  )}
-                </div>
 
-                <div className="p-3 bg-slate-50 text-[10px] text-slate-700 font-bold text-center">
-                  FOTOCOPY CAKRAWALA
-                </div>
-              </div>
+                    {/* QRIS Red Header Frame */}
+                    <div className="border border-slate-200 rounded-lg overflow-hidden max-w-[270px] w-full shadow-md bg-white">
+                      <div className="bg-red-600 p-2.5 flex items-center justify-between text-white font-extrabold text-[10px] tracking-widest">
+                        <span>QRIS</span>
+                        <span className="text-[7px] font-normal leading-none opacity-85">GPN / BANK INDONESIA</span>
+                      </div>
+                      
+                      {/* QR Code Body */}
+                      <div className="p-4 flex items-center justify-center bg-white border-b border-slate-100">
+                        {qrPayload ? (
+                          <img
+                            src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrPayload)}`}
+                            alt="QRIS QR Code"
+                            className="w-48 h-48"
+                          />
+                        ) : (
+                          <div className="w-48 h-48 bg-slate-50 animate-pulse flex items-center justify-center text-xs text-slate-400 rounded">
+                            Membuat QRIS...
+                          </div>
+                        )}
+                      </div>
 
-              <div className="text-xs text-slate-500 space-y-1 max-w-xs mx-auto">
-                <p>1. Buka GoPay, OVO, ShopeePay, LinkAja, atau Mobile Banking.</p>
-                <p>2. Arahkan kamera HP ke QR Code di atas.</p>
-                <p>3. Konfirmasi nominal dan klik bayar.</p>
-              </div>
+                      <div className="p-3 bg-slate-50 text-[10px] text-slate-700 font-bold text-center">
+                        FOTOCOPY CAKRAWALA
+                      </div>
+                    </div>
 
-              {/* Simulation Box for Developers */}
-              <div className="w-full pt-4 border-t border-slate-100">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Simulasi Integrasi (Developer Tool)</p>
-                <button
-                  type="button"
-                  onClick={simulatePaymentSuccess}
-                  disabled={paying}
-                  className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-bold transition-all flex items-center justify-center shadow-sm"
-                >
-                  {paying ? (
-                    <>
-                      <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent mr-2"></div>
-                      Memverifikasi...
-                    </>
-                  ) : (
-                    "Bayar Sekarang (Simulasi Sukses)"
-                  )}
-                </button>
+                    <div className="text-xs text-slate-500 space-y-1 max-w-xs mx-auto">
+                      <p>1. Buka GoPay, OVO, ShopeePay, LinkAja, atau Mobile Banking.</p>
+                      <p>2. Arahkan kamera HP ke QR Code di atas.</p>
+                      <p>3. Konfirmasi nominal dan klik bayar.</p>
+                    </div>
+
+                    {/* Simulation Box for Developers */}
+                    <div className="w-full pt-4 border-t border-slate-100">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Simulasi Integrasi (Developer Tool)</p>
+                      <button
+                        type="button"
+                        onClick={simulatePaymentSuccess}
+                        disabled={paying}
+                        className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-bold transition-all flex items-center justify-center shadow-sm"
+                      >
+                        {paying ? (
+                          <>
+                            <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent mr-2"></div>
+                            Memverifikasi...
+                          </>
+                        ) : (
+                          "Bayar Sekarang (Simulasi Sukses)"
+                        )}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  /* STATIC QRIS PANEL (MANUAL UPLOAD) */
+                  <>
+                    <div>
+                      <span className="text-xs font-bold text-slate-650 bg-slate-50 px-2.5 py-1 rounded-full border border-slate-200 uppercase tracking-wider">
+                        Scan QR & Upload Bukti
+                      </span>
+                      <h3 className="text-lg font-bold text-slate-800 mt-3">Pembayaran QRIS Statis Toko</h3>
+                      <p className="text-xs text-slate-450 mt-1">Scan QR, ketik nominal Rp {order.totalAmount.toLocaleString("id-ID")}, lalu unggah bukti transfer.</p>
+                    </div>
+
+                    {/* QRIS Static sticker Frame */}
+                    <div className="border border-slate-200 rounded-lg overflow-hidden max-w-[270px] w-full shadow-md bg-white">
+                      <div className="bg-red-650 p-2.5 bg-red-600 flex items-center justify-between text-white font-extrabold text-[10px] tracking-widest">
+                        <span>QRIS STATIS</span>
+                        <span className="text-[7.5px] font-bold">GPN / BI</span>
+                      </div>
+                      
+                      {/* QR Code Body */}
+                      <div className="p-4 flex items-center justify-center bg-white border-b border-slate-100">
+                        <img
+                          src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent("00020101021126590016ID102008320473901021200140200384729052040000530336054071400005802ID5920FOTOCOPY%20CAKRAWALA6005MEDAN610520263620707030101")}`}
+                          alt="Static QRIS Code"
+                          className="w-48 h-48"
+                        />
+                      </div>
+
+                      <div className="p-3 bg-slate-50 text-[10px] text-slate-700 font-bold text-center">
+                        FOTOCOPY CAKRAWALA
+                      </div>
+                    </div>
+
+                    {/* Uploader field */}
+                    <div className="w-full space-y-3 text-left">
+                      <label className="block text-xs font-bold text-slate-700">Pilih Foto Bukti Transfer / Pembayaran:</label>
+                      
+                      <div className="flex items-center gap-4">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleReceiptChange}
+                          className="block w-full text-xs text-slate-500
+                            file:mr-4 file:py-2 file:px-4
+                            file:rounded-md file:border-0
+                            file:text-[10px] file:font-extrabold
+                            file:bg-red-50 file:text-red-750
+                            hover:file:bg-red-100 file:cursor-pointer"
+                        />
+                      </div>
+
+                      {receiptImage && (
+                        <div className="border border-slate-200 rounded p-2.5 bg-slate-50 flex items-center gap-3">
+                          <img src={receiptImage} className="w-12 h-16 object-contain rounded border border-slate-200" alt="Bukti Upload" />
+                          <div>
+                            <span className="text-[10px] font-bold text-slate-800">Pratinjau Bukti</span>
+                            <p className="text-[9px] text-slate-400">Siap dikirim ke kasir</p>
+                          </div>
+                        </div>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={submitManualPayment}
+                        disabled={uploadingReceipt || !receiptImage}
+                        className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded text-xs font-bold transition-all flex items-center justify-center shadow disabled:bg-slate-100 disabled:text-slate-400"
+                      >
+                        {uploadingReceipt ? (
+                          <>
+                            <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent mr-2"></div>
+                            Mengirim...
+                          </>
+                        ) : (
+                          "Kirim Bukti Pembayaran"
+                        )}
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
-            </div>
+            )
           ) : (
+
             /* SUCCESS STATE */
             <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm text-center space-y-6 flex flex-col items-center border-t-4 border-t-emerald-500">
-              <div className="success-checkmark-bounce p-3 bg-emerald-100 text-emerald-600 rounded-full">
-                <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                </svg>
+              <div className="success-checkmark-bounce p-3 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center">
+                <Check className="w-10 h-10" />
               </div>
 
               <div>

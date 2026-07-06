@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Navbar from "@/components/Navbar";
 import gsap from "gsap";
+import { UploadCloud, Trash2 } from "lucide-react";
 
 interface CartItem {
   itemType: string;
@@ -10,6 +11,14 @@ interface CartItem {
   qty: number;
   unitPrice: number;
   name: string;
+}
+
+interface VirtualPage {
+  id: string;
+  fileName: string;
+  pageNum: number;
+  rotation: number;
+  previewUrl: string;
 }
 
 const getPdfPageCount = async (file: File): Promise<number> => {
@@ -87,20 +96,104 @@ const renderPdfThumbnails = async (file: File, maxPages = 16): Promise<string[]>
   }
 };
 
+const renderMockPageContent = (pageNum: number) => {
+  switch (pageNum % 4) {
+    case 1:
+      return (
+        <div className="flex flex-col h-full w-full p-2 space-y-1 bg-white select-none text-left">
+          <div className="h-1.5 bg-slate-800 rounded w-1/2 mb-1.5"></div>
+          <div className="border border-slate-200 rounded flex flex-col divide-y divide-slate-100 text-[6px]">
+            <div className="grid grid-cols-3 bg-slate-100 p-0.5 font-bold">
+              <span>Hari</span><span>Tugas</span><span>Status</span>
+            </div>
+            <div className="grid grid-cols-3 p-0.5">
+              <span>Senin</span><span>Cetak</span><span>Lunas</span>
+            </div>
+            <div className="grid grid-cols-3 p-0.5">
+              <span>Selasa</span><span>ATK</span><span>Antre</span>
+            </div>
+          </div>
+        </div>
+      );
+    case 2:
+      return (
+        <div className="flex flex-col h-full w-full p-2 space-y-1 bg-white select-none text-left">
+          <div className="h-1.5 bg-slate-800 rounded w-2/3 mb-1.5"></div>
+          <div className="h-1 bg-slate-200 rounded w-full"></div>
+          <div className="h-1 bg-slate-200 rounded w-full"></div>
+          <div className="h-1 bg-slate-200 rounded w-5/6"></div>
+          <div className="h-1 bg-slate-200 rounded w-3/4"></div>
+        </div>
+      );
+    case 3:
+      return (
+        <div className="flex flex-col h-full w-full p-2 space-y-1 bg-white select-none text-left">
+          <div className="h-1.5 bg-slate-800 rounded w-1/2 mb-1.5"></div>
+          <div className="flex items-center space-x-1">
+            <span className="w-1 h-1 bg-red-500 rounded-full flex-shrink-0"></span>
+            <div className="h-1 bg-slate-200 rounded w-2/3"></div>
+          </div>
+          <div className="flex items-center space-x-1">
+            <span className="w-1 h-1 bg-red-500 rounded-full flex-shrink-0"></span>
+            <div className="h-1 bg-slate-200 rounded w-3/4"></div>
+          </div>
+          <div className="flex items-center space-x-1">
+            <span className="w-1 h-1 bg-red-500 rounded-full flex-shrink-0"></span>
+            <div className="h-1 bg-slate-200 rounded w-1/2"></div>
+          </div>
+        </div>
+      );
+    case 0:
+    default:
+      return (
+        <div className="flex flex-col h-full w-full p-2 bg-white select-none justify-between text-left">
+          <div className="h-1.5 bg-slate-800 rounded w-3/4"></div>
+          <div className="flex items-end justify-around h-10 w-full pt-1">
+            <div className="w-1.5 bg-red-500 h-1/2 rounded-t-sm"></div>
+            <div className="w-1.5 bg-red-600 h-3/4 rounded-t-sm"></div>
+            <div className="w-1.5 bg-slate-300 h-1/3 rounded-t-sm"></div>
+          </div>
+        </div>
+      );
+  }
+};
+
+const getAtkVisualDetails = (name: string) => {
+  const lowercase = name.toLowerCase();
+  if (lowercase.includes("pensil") || lowercase.includes("pencil")) {
+    return { icon: "✏️", bg: "bg-amber-50 border-amber-200 text-amber-600" };
+  }
+  if (lowercase.includes("pulpen") || lowercase.includes("pen")) {
+    return { icon: "🖊️", bg: "bg-blue-50 border-blue-200 text-blue-600" };
+  }
+  if (lowercase.includes("buku") || lowercase.includes("notebook") || lowercase.includes("binder")) {
+    return { icon: "📘", bg: "bg-emerald-50 border-emerald-200 text-emerald-600" };
+  }
+  if (lowercase.includes("kertas") || lowercase.includes("hvs")) {
+    return { icon: "📄", bg: "bg-slate-50 border-slate-200 text-slate-600" };
+  }
+  if (lowercase.includes("penggaris") || lowercase.includes("ruler")) {
+    return { icon: "📐", bg: "bg-indigo-50 border-indigo-200 text-indigo-600" };
+  }
+  if (lowercase.includes("penghapus") || lowercase.includes("eraser")) {
+    return { icon: "🧼", bg: "bg-pink-50 border-pink-200 text-pink-600" };
+  }
+  if (lowercase.includes("map") || lowercase.includes("folder")) {
+    return { icon: "📁", bg: "bg-yellow-50 border-yellow-200 text-yellow-600" };
+  }
+  return { icon: "📦", bg: "bg-red-50 border-red-200 text-red-600" };
+};
+
 export default function OrderConfig() {
   // Customer identity
   const [fullName, setFullName] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
 
   // File upload state
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [mockFileName, setMockFileName] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Auto-calculated PDF details
-  const [originalTotalPages, setOriginalTotalPages] = useState<number>(0);
-  const [excludedPages, setExcludedPages] = useState<number[]>([]);
-  const [pagePreviews, setPagePreviews] = useState<string[]>([]);
+  const [virtualPages, setVirtualPages] = useState<VirtualPage[]>([]);
+  const [largePreviewPage, setLargePreviewPage] = useState<VirtualPage | null>(null);
+  const [excludedPages, setExcludedPages] = useState<string[]>([]);
   const [hoveredPage, setHoveredPage] = useState<number>(1);
 
   // Load GSAP animations on mount
@@ -113,6 +206,7 @@ export default function OrderConfig() {
 
   // Print options
   const [pages, setPages] = useState<number>(1);
+  const [copies, setCopies] = useState<number>(1);
   const [colorType, setColorType] = useState<"bw" | "color">("bw"); // bw = Hitam Putih, color = Warna
 
   // Addons (only editable if file is uploaded)
@@ -138,31 +232,44 @@ export default function OrderConfig() {
   }, []);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setSelectedFile(file);
-      setMockFileName("");
-      setExcludedPages([]);
-      setPagePreviews([]);
-      setHoveredPage(1);
-      
-      if (file.type === "application/pdf") {
-        setLoading(true);
-        const count = await getPdfPageCount(file);
-        setOriginalTotalPages(count);
-        setPages(count);
-        
-        try {
-          const previews = await renderPdfThumbnails(file);
-          setPagePreviews(previews);
-        } catch (e) {
-          console.error(e);
+    if (e.target.files) {
+      setLoading(true);
+      const files = Array.from(e.target.files);
+      const newPages: VirtualPage[] = [];
+
+      for (const file of files) {
+        if (file.type === "application/pdf") {
+          const count = await getPdfPageCount(file);
+          let previews: string[] = [];
+          try {
+            previews = await renderPdfThumbnails(file);
+          } catch (err) {
+            console.error(err);
+          }
+          for (let i = 1; i <= count; i++) {
+            newPages.push({
+              id: Math.random().toString(36).substring(7),
+              fileName: file.name,
+              pageNum: i,
+              rotation: 0,
+              previewUrl: previews[i - 1] || "",
+            });
+          }
+        } else {
+          // Image or other files treated as a single page
+          const objectUrl = file.type.startsWith("image/") ? URL.createObjectURL(file) : "";
+          newPages.push({
+            id: Math.random().toString(36).substring(7),
+            fileName: file.name,
+            pageNum: 1,
+            rotation: 0,
+            previewUrl: objectUrl,
+          });
         }
-        setLoading(false);
-      } else {
-        setOriginalTotalPages(1);
-        setPages(1);
       }
+
+      setVirtualPages((prev) => [...prev, ...newPages]);
+      setLoading(false);
     }
   };
 
@@ -172,34 +279,87 @@ export default function OrderConfig() {
 
   // Mock file for quick testing without actual upload
   const setMockFile = () => {
-    setMockFileName("dokumen_skripsi_final.pdf");
-    setSelectedFile(null);
-    setExcludedPages([]);
-    setPagePreviews([]);
-    setHoveredPage(1);
-    setOriginalTotalPages(8); // Mock skripsi as 8 pages
-    setPages(8);
+    const mockFileName = "Tabel Timeline P.pdf";
+    const newPages: VirtualPage[] = Array.from({ length: 4 }).map((_, idx) => ({
+      id: Math.random().toString(36).substring(7),
+      fileName: mockFileName,
+      pageNum: idx + 1,
+      rotation: 0,
+      previewUrl: "",
+    }));
+    setVirtualPages(newPages);
   };
 
-  const togglePageSelection = (pageNum: number) => {
+  const togglePageSelection = (id: string) => {
     setExcludedPages((prev) => {
-      let next;
-      if (prev.includes(pageNum)) {
-        next = prev.filter((p) => p !== pageNum);
+      if (prev.includes(id)) {
+        return prev.filter((p) => p !== id);
       } else {
-        next = [...prev, pageNum];
+        const next = [...prev, id];
+        if (next.length === virtualPages.length) {
+          alert("Anda harus mencetak minimal 1 halaman!");
+          return prev;
+        }
+        return next;
       }
-      
-      // Ensure they don't exclude ALL pages (print at least 1)
-      if (next.length === originalTotalPages) {
-        alert("Anda harus mencetak minimal 1 halaman!");
-        return prev;
-      }
-      
-      setPages(originalTotalPages - next.length);
+    });
+  };
+
+  const deletePage = (id: string) => {
+    setVirtualPages((prev) => prev.filter((p) => p.id !== id));
+    setExcludedPages((prev) => prev.filter((p) => p !== id));
+  };
+
+  const rotatePage = (id: string) => {
+    setVirtualPages((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, rotation: (p.rotation + 90) % 360 } : p))
+    );
+  };
+
+  const duplicatePage = (id: string) => {
+    setVirtualPages((prev) => {
+      const idx = prev.findIndex((p) => p.id === id);
+      if (idx === -1) return prev;
+      const original = prev[idx];
+      const copy: VirtualPage = {
+        ...original,
+        id: Math.random().toString(36).substring(7),
+      };
+      const next = [...prev];
+      next.splice(idx + 1, 0, copy);
       return next;
     });
   };
+
+  const updateAtkQty = (productId: number, delta: number) => {
+    setAtkItems((prev) => {
+      const next = prev.map((item) => {
+        if (item.productId === productId) {
+          const nextQty = Math.max(1, item.qty + delta);
+          return { ...item, qty: nextQty };
+        }
+        return item;
+      });
+      localStorage.setItem("atk_cart", JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const removeAtkItem = (productId: number) => {
+    setAtkItems((prev) => {
+      const next = prev.filter((item) => item.productId !== productId);
+      if (next.length === 0) {
+        localStorage.removeItem("atk_cart");
+      } else {
+        localStorage.setItem("atk_cart", JSON.stringify(next));
+      }
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    setPages(virtualPages.length - excludedPages.length);
+  }, [virtualPages, excludedPages]);
 
   // Calculate prices
   const getPrintUnitPrice = () => {
@@ -214,7 +374,7 @@ export default function OrderConfig() {
   };
 
   const getPrintSubtotal = () => {
-    const isFileUploaded = !!selectedFile || !!mockFileName;
+    const isFileUploaded = virtualPages.length > 0;
     if (!isFileUploaded) return 0;
     return (getPrintUnitPrice() * pages) + getPrintAddonsTotal();
   };
@@ -240,7 +400,7 @@ export default function OrderConfig() {
       return;
     }
 
-    const hasFile = !!selectedFile || !!mockFileName;
+    const hasFile = virtualPages.length > 0;
     const hasAtk = atkItems.length > 0;
 
     if (!hasFile && !hasAtk) {
@@ -258,20 +418,21 @@ export default function OrderConfig() {
       if (hasJilid) addons.push({ addonType: "jilid", price: 5000 });
       if (hasLaminating) addons.push({ addonType: "laminating", price: 4000 });
 
-      const printedPages = Array.from({ length: originalTotalPages })
-        .map((_, i) => i + 1)
-        .filter((p) => !excludedPages.includes(p));
+      const printedPages = virtualPages
+        .map((vp, idx) => ({ ...vp, seq: idx + 1 }))
+        .filter((vp) => !excludedPages.includes(vp.id))
+        .map((vp) => vp.seq);
 
       orderItems.push({
         itemType: "print_doc",
         productId: null,
         qty: 1,
         unitPrice: getPrintUnitPrice(),
-        fileUrl: mockFileName || selectedFile?.name || "dokumen_upload.pdf",
+        fileUrl: virtualPages[0]?.fileName || "dokumen_cetak.pdf",
         specJson: {
-          pages: pages,
+          pages: virtualPages.length - excludedPages.length,
           color: colorType,
-          fileName: mockFileName || selectedFile?.name,
+          fileName: virtualPages.map(vp => vp.fileName).filter((v, i, a) => a.indexOf(v) === i).join(", "),
           printedPages: printedPages.length > 0 ? printedPages : [1],
         },
         addons,
@@ -334,7 +495,7 @@ export default function OrderConfig() {
           <p className="text-slate-500 text-sm mt-1">Lengkapi detail pesanan Anda untuk proses yang lebih cepat.</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-8 bg-white p-8 rounded-lg border border-slate-200 shadow-sm">
+        <form onSubmit={handleSubmit} className="space-y-8 bg-white p-4 sm:p-8 rounded-lg border border-slate-200 shadow-sm">
           {/* Identitas Pelanggan */}
           <section className="form-section-anim opacity-0 space-y-4">
             <h2 className="text-lg font-bold text-slate-800 border-b border-slate-100 pb-2">Identitas Pelanggan</h2>
@@ -371,180 +532,199 @@ export default function OrderConfig() {
 
           {/* Unggah Berkas */}
           <section className="form-section-anim opacity-0 space-y-4">
-            <h2 className="text-lg font-bold text-slate-800 border-b border-slate-100 pb-2">Unggah Berkas</h2>
+            <h2 className="text-lg font-bold text-slate-800 border-b border-slate-100 pb-2">Unggah Berkas & Susun Halaman</h2>
             
-            <div 
-              onClick={triggerFileSelect}
-              className="border-2 border-dashed border-slate-300 rounded-lg p-8 flex flex-col items-center justify-center bg-slate-50 hover:bg-slate-100/70 cursor-pointer transition-all hover:border-red-300"
-            >
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                accept=".pdf,.docx,.doc,image/*"
-                className="hidden"
-              />
-              
-              <svg className="w-12 h-12 text-slate-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-              </svg>
-              
-              <p className="text-sm font-bold text-slate-800">Tarik & Lepas berkas di sini</p>
-              <p className="text-xs text-slate-400 mt-1">Mendukung format PDF, DOCX, atau Gambar</p>
-              
-              <button
-                type="button"
-                className="mt-4 px-4 py-2 bg-white border border-slate-200 rounded-md text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition-all"
+            {virtualPages.length === 0 ? (
+              <div 
+                onClick={triggerFileSelect}
+                className="border-2 border-dashed border-slate-300 rounded-lg p-8 flex flex-col items-center justify-center bg-slate-50 hover:bg-slate-100/70 cursor-pointer transition-all hover:border-red-300"
               >
-                Pilih Berkas
-              </button>
-            </div>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  accept=".pdf,.docx,.doc,image/*"
+                  multiple
+                  className="hidden"
+                />
+                
+                <UploadCloud className="w-12 h-12 text-slate-400 mb-3" />
+                
+                <p className="text-sm font-bold text-slate-800">Tarik & Lepas berkas di sini</p>
+                <p className="text-xs text-slate-400 mt-1">Mendukung PDF, gambar, atau berkas cetak lainnya</p>
+                
+                <button
+                  type="button"
+                  className="mt-4 px-4 py-2 bg-white border border-slate-200 rounded-md text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition-all"
+                >
+                  Pilih Berkas
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                
+                {/* Hidden input for adding more files */}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  accept=".pdf,.docx,.doc,image/*"
+                  multiple
+                  className="hidden"
+                />
 
-            {/* Mock Selection helper */}
-            <div className="flex justify-end">
-              <button 
-                type="button" 
-                onClick={setMockFile}
-                className="text-xs text-red-600 font-semibold hover:underline"
-              >
-                *Gunakan Berkas Contoh (Cepat)
-              </button>
-            </div>
-
-            {/* Display Selected File Details */}
-            {(selectedFile || mockFileName) && (
-              <div className="space-y-4">
-                <div className="p-4 bg-slate-50 rounded-lg border border-slate-150 flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-red-100 text-red-600 rounded">
-                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-slate-800 truncate max-w-[240px] sm:max-w-[300px]">
-                        {selectedFile ? selectedFile.name : mockFileName}
-                      </p>
-                      <p className="text-xs text-slate-400 font-medium mt-0.5">
-                        {selectedFile ? `${(selectedFile.size / 1024).toFixed(1)} KB` : "1.2 MB"}
-                        {originalTotalPages > 0 && ` • Total: ${originalTotalPages} halaman`}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedFile(null);
-                      setMockFileName("");
-                      setOriginalTotalPages(0);
-                      setExcludedPages([]);
-                      setPages(1);
-                    }}
-                    className="text-slate-400 hover:text-red-500"
-                  >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-
-                {/* Visual Page Excluder */}
-                {originalTotalPages > 1 && (
-                  <div className="p-4 bg-white rounded-lg border border-slate-200 space-y-4">
-                    <div>
-                      <span className="text-xs font-bold text-slate-700 uppercase tracking-wide block">Pilih Halaman yang Dicetak</span>
-                      <p className="text-[10px] text-slate-400 mt-0.5">Klik halaman untuk mengecualikan dari cetakan. Arahkan kursor untuk pratinjau besar.</p>
-                    </div>
+                {/* Horizontal virtual pages layout */}
+                <div className="flex items-center gap-3 overflow-x-auto pb-4 pt-2 scrollbar-thin max-w-full px-1">
+                  {virtualPages.map((page, idx) => {
+                    const isExcluded = excludedPages.includes(page.id);
+                    const isIncluded = !isExcluded;
                     
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
-                      
-                      {/* Left: Thumbnail Grid */}
-                      <div className="md:col-span-3 grid grid-cols-3 sm:grid-cols-5 gap-3">
-                        {Array.from({ length: originalTotalPages }).map((_, idx) => {
-                          const pageNum = idx + 1;
-                          const isIncluded = !excludedPages.includes(pageNum);
-                          const previewImg = pagePreviews[idx];
+                    return (
+                      <div key={page.id} className="flex items-center gap-3 flex-shrink-0">
+                        {/* Page card container */}
+                        <div className="relative group w-40 flex flex-col items-center bg-white border border-slate-250 rounded-lg p-2.5 shadow-sm hover:shadow transition-all">
                           
-                          return (
+                          {/* Checked Box indicator */}
+                          <div className="absolute top-3.5 left-3.5 z-20">
+                            <input
+                              type="checkbox"
+                              checked={isIncluded}
+                              onChange={() => togglePageSelection(page.id)}
+                              className="w-4.5 h-4.5 text-red-650 border-slate-350 rounded focus:ring-red-500 cursor-pointer accent-red-600"
+                            />
+                          </div>
+
+                          {/* Quick Toolbar (Zoom, Rotate, Duplicate, Delete) */}
+                          <div className="absolute top-2.5 right-2.5 z-20 flex gap-1 bg-white/95 backdrop-blur-[1px] p-1 rounded border border-slate-150 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button
-                              key={pageNum}
                               type="button"
-                              onClick={() => togglePageSelection(pageNum)}
-                              onMouseEnter={() => setHoveredPage(pageNum)}
-                              className={`flex flex-col items-center justify-between p-2 h-32 border rounded-md transition-all relative overflow-hidden group ${
-                                isIncluded
-                                  ? "bg-white border-red-500 shadow-sm ring-1 ring-red-400"
-                                  : "bg-slate-50 border-slate-200 opacity-60"
-                              }`}
+                              onClick={() => setLargePreviewPage(page)}
+                              title="Perbesar"
+                              className="p-1 hover:bg-slate-100 rounded text-slate-500 hover:text-slate-800 text-[10px]"
                             >
-                              {/* Header */}
-                              <div className="w-full flex justify-between items-center text-[9px] text-slate-400 border-b border-slate-100 pb-1 z-10 bg-white/90 backdrop-blur-[1px]">
-                                <span className="font-bold">Hal {pageNum}</span>
-                                <span className={`w-1.5 h-1.5 rounded-full ${isIncluded ? 'bg-red-500' : 'bg-slate-300'}`}></span>
-                              </div>
-                              
-                              {/* Thumbnail preview body */}
-                              <div className="flex-grow flex items-center justify-center w-full relative my-1.5 bg-slate-50 border border-slate-100 rounded-sm overflow-hidden h-16">
-                                {previewImg ? (
-                                  <img src={previewImg} className="w-full h-full object-contain" alt={`Hal ${pageNum}`} />
-                                ) : (
-                                  // Fallback simulated document lines
-                                  <div className="flex flex-col justify-around h-full w-full p-1 opacity-20">
-                                    <div className="h-0.5 bg-slate-800 rounded w-3/4"></div>
-                                    <div className="h-0.5 bg-slate-800 rounded w-full"></div>
-                                    <div className="h-0.5 bg-slate-800 rounded w-5/6"></div>
-                                    <div className="h-0.5 bg-slate-800 rounded w-2/3"></div>
-                                  </div>
-                                )}
-                                <span className={`absolute text-xs font-black ${isIncluded ? 'text-slate-800 bg-white/75 px-1 py-0.5 rounded shadow-sm' : 'text-slate-400'}`}>
-                                  {pageNum}
-                                </span>
-                              </div>
-
-                              {/* Footer status */}
-                              <span className={`text-[9px] font-extrabold uppercase z-10 ${isIncluded ? 'text-red-600' : 'text-slate-400'}`}>
-                                {isIncluded ? 'Cetak' : 'Lewati'}
-                              </span>
+                              🔍
                             </button>
-                          );
-                        })}
-                      </div>
+                            <button
+                              type="button"
+                              onClick={() => rotatePage(page.id)}
+                              title="Putar"
+                              className="p-1 hover:bg-slate-100 rounded text-slate-500 hover:text-slate-800 text-[10px]"
+                            >
+                              🔄
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => duplicatePage(page.id)}
+                              title="Duplikat"
+                              className="p-1 hover:bg-slate-100 rounded text-slate-500 hover:text-slate-800 text-[10px]"
+                            >
+                              📋
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => deletePage(page.id)}
+                              title="Hapus"
+                              className="p-1 hover:bg-slate-100 rounded text-red-500 hover:text-red-700 text-[10px]"
+                            >
+                              🗑️
+                            </button>
+                          </div>
 
-                      {/* Right: Large Page Preview Panel */}
-                      <div className="md:col-span-1 bg-slate-50 p-4 rounded-lg border border-slate-150 flex flex-col items-center justify-center space-y-3 h-52 md:h-auto">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide text-center">Detail Pratinjau</span>
-                        
-                        <div className="w-28 h-36 bg-white border border-slate-200 rounded shadow-md relative overflow-hidden flex flex-col justify-between p-2">
-                          <span className="text-[8px] font-bold text-slate-400 border-b border-slate-100 pb-0.5">Halaman {hoveredPage}</span>
-                          
-                          <div className="flex-grow flex items-center justify-center w-full relative bg-slate-50 rounded-sm overflow-hidden my-2">
-                            {pagePreviews[hoveredPage - 1] ? (
-                              <img src={pagePreviews[hoveredPage - 1]} className="w-full h-full object-contain" alt={`Preview Hal ${hoveredPage}`} />
-                            ) : (
-                              // Detailed mock document text lines
-                              <div className="flex flex-col justify-around h-full w-full p-2.5 opacity-25">
-                                <div className="h-1 bg-slate-800 rounded w-1/2 mb-1"></div>
-                                <div className="h-0.5 bg-slate-800 rounded w-3/4"></div>
-                                <div className="h-0.5 bg-slate-800 rounded w-full"></div>
-                                <div className="h-0.5 bg-slate-800 rounded w-5/6"></div>
-                                <div className="h-0.5 bg-slate-800 rounded w-2/3"></div>
-                                <div className="h-0.5 bg-slate-800 rounded w-full"></div>
+                          {/* Thumbnail preview body */}
+                          <div className="relative w-36 h-48 bg-slate-50 rounded border border-slate-150 overflow-hidden flex items-center justify-center mt-6">
+                            
+                            {/* Blue trash overlay on hover */}
+                            <div className="absolute inset-0 bg-slate-900/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-10 pointer-events-none">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deletePage(page.id);
+                                }}
+                                className="w-10 h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center shadow-lg pointer-events-auto transition-all"
+                              >
+                                <Trash2 className="w-5 h-5" />
+                              </button>
+                            </div>
+
+                            <div 
+                              style={{ transform: `rotate(${page.rotation}deg)` }} 
+                              className="w-full h-full transition-transform duration-200"
+                            >
+                              {page.previewUrl ? (
+                                <img 
+                                  src={page.previewUrl} 
+                                  className="w-full h-full object-contain" 
+                                  alt={`Hal ${page.pageNum}`} 
+                                />
+                              ) : (
+                                // Render beautiful custom mock content
+                                renderMockPageContent(page.pageNum)
+                              )}
+                            </div>
+
+                            {/* Dim Overlay when excluded */}
+                            {isExcluded && (
+                              <div className="absolute inset-0 bg-slate-900/10 backdrop-blur-[0.5px] flex items-center justify-center z-10">
+                                <span className="px-2 py-1 bg-slate-800/90 text-white font-extrabold text-[9px] rounded uppercase tracking-wider shadow">
+                                  Dilewati
+                                </span>
                               </div>
                             )}
                           </div>
-                          
-                          <div className="flex justify-between items-center text-[9px] font-bold">
-                            <span className="text-slate-400">Hal {hoveredPage}</span>
-                            <span className={!excludedPages.includes(hoveredPage) ? "text-red-600" : "text-slate-400"}>
-                              {!excludedPages.includes(hoveredPage) ? "Status: Cetak" : "Status: Lewati"}
+
+                          {/* Footer label */}
+                          <div className="w-full text-center mt-3 text-xs">
+                            <span className="font-bold text-slate-800 line-clamp-1 bg-red-50 text-red-700 px-1.5 py-0.5 rounded text-[9px] block">
+                              {page.fileName.length > 18 ? page.fileName.substring(0, 15) + "..." : page.fileName}
+                            </span>
+                            <span className="text-[11px] text-slate-400 block mt-1 font-extrabold">
+                              {idx + 1}
                             </span>
                           </div>
-                        </div>
-                      </div>
 
-                    </div>
+                        </div>
+
+                        {/* Plus button between cards */}
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="w-6 h-6 bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-full flex items-center justify-center shadow-sm font-black transition-all flex-shrink-0 text-sm hover:scale-105 active:scale-95"
+                        >
+                          +
+                        </button>
+                      </div>
+                    );
+                  })}
+
+                  {/* Dotted add-more card on the far right */}
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-40 h-72 border-2 border-dashed border-blue-300 rounded-lg bg-blue-50/20 hover:bg-blue-50/50 cursor-pointer flex flex-col items-center justify-center p-4 text-center gap-2 flex-shrink-0 transition-all hover:border-blue-400 group"
+                  >
+                    <span className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-lg font-bold group-hover:scale-110 transition-transform">
+                      +
+                    </span>
+                    <span className="text-xs font-bold text-blue-600">Tambah Berkas</span>
+                    <p className="text-[10px] text-slate-400 leading-tight">Add PDF, image, Word, Excel, and PowerPoint files</p>
                   </div>
-                )}
+
+                </div>
+
+                {/* Reset button */}
+                <div className="flex justify-end pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setVirtualPages([]);
+                      setExcludedPages([]);
+                      setPages(1);
+                    }}
+                    className="text-xs text-slate-400 hover:text-red-500 font-bold hover:underline"
+                  >
+                    Hapus Semua Berkas
+                  </button>
+                </div>
               </div>
             )}
           </section>
@@ -553,28 +733,43 @@ export default function OrderConfig() {
           <section className="form-section-anim opacity-0 space-y-4">
             <h2 className="text-lg font-bold text-slate-800 border-b border-slate-100 pb-2">Opsi Cetak</h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Jumlah Halaman */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
                   Jumlah Halaman
                 </label>
                 <input
-                  type="number"
-                  min="1"
-                  value={pages}
-                  onChange={(e) => setPages(Math.max(1, Number(e.target.value)))}
-                  className={`w-full px-4 h-11 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm font-medium ${
-                    originalTotalPages > 1 ? "bg-slate-100 text-slate-500 cursor-not-allowed" : "bg-white"
-                  }`}
-                  readOnly={originalTotalPages > 1}
+                  type="text"
+                  readOnly
+                  value={`${pages} Halaman`}
+                  className="w-full px-4 h-11 border border-slate-200 rounded-md bg-slate-100 text-slate-500 font-medium text-sm focus:outline-none"
                 />
-                {originalTotalPages > 1 && (
-                  <span className="text-[10px] text-red-500 block mt-1 font-semibold">
-                    *Jumlah halaman dihitung otomatis dari pilihan halaman aktif Anda di atas.
+                {virtualPages.length > 0 && (
+                  <span className="text-[9px] text-slate-450 block mt-1 leading-normal">
+                    *Dihitung otomatis dari pilihan halaman aktif Anda.
                   </span>
                 )}
               </div>
 
+              {/* Jumlah Rangkap */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
+                  Jumlah Rangkap (Copies)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={copies}
+                  onChange={(e) => setCopies(Math.max(1, Number(e.target.value)))}
+                  className="w-full px-4 h-11 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm font-semibold bg-white"
+                />
+                <span className="text-[9px] text-slate-450 block mt-1 leading-normal">
+                  *Masukkan jumlah cetakan set dokumen yang Anda inginkan.
+                </span>
+              </div>
+
+              {/* Warna Cetak */}
               <div>
                 <span className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
                   Warna Cetak
@@ -606,8 +801,9 @@ export default function OrderConfig() {
               </div>
             </div>
 
+
             {/* Dynamic Addons - only shown/active when file is selected */}
-            {(selectedFile || mockFileName) && (
+            {(virtualPages.length > 0) && (
               <div className="mt-4 p-4 bg-slate-50 rounded-lg border border-slate-150 space-y-3">
                 <span className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                   Add-on Tambahan (Jilid & Laminating)
@@ -643,8 +839,8 @@ export default function OrderConfig() {
             )}
           </section>
 
-          {/* ATK Items Summary (If any) */}
-          {atkItems.length > 0 && (
+          {/* ATK Items Summary */}
+          {atkItems.length > 0 ? (
             <section className="form-section-anim opacity-0 space-y-4">
               <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                 <h2 className="text-lg font-bold text-slate-800">ATK yang Dipesan</h2>
@@ -654,26 +850,83 @@ export default function OrderConfig() {
                     localStorage.removeItem("atk_cart");
                     setAtkItems([]);
                   }}
-                  className="text-xs text-red-500 hover:underline"
+                  className="text-xs text-red-500 hover:underline font-bold"
                 >
-                  Hapus ATK
+                  Hapus Semua ATK
                 </button>
               </div>
-              <div className="border border-slate-200 rounded-lg overflow-hidden divide-y divide-slate-150">
-                {atkItems.map((item, idx) => (
-                  <div key={idx} className="p-3 flex items-center justify-between text-xs bg-slate-50/50">
-                    <div>
-                      <span className="font-bold text-slate-800">{item.name}</span>
-                      <p className="text-slate-400">Qty: {item.qty} x Rp {item.unitPrice.toLocaleString("id-ID")}</p>
+              
+              <div className="flex flex-col gap-3">
+                {atkItems.map((item, idx) => {
+                  const visual = getAtkVisualDetails(item.name);
+                  return (
+                    <div key={idx} className="p-3 bg-white border border-slate-200 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between shadow-sm hover:shadow-md transition-all gap-3 text-xs">
+                      
+                      {/* Left: Icon & Product Info */}
+                      <div className="flex items-center gap-3 w-full sm:w-auto">
+                        <div className={`w-11 h-11 rounded-md border flex items-center justify-center text-lg flex-shrink-0 ${visual.bg}`}>
+                          {visual.icon}
+                        </div>
+                        <div className="text-left min-w-0 flex-1">
+                          <span className="font-bold text-slate-800 text-xs block truncate" title={item.name}>{item.name}</span>
+                          <p className="text-[10px] text-slate-400 font-medium">Rp {item.unitPrice.toLocaleString("id-ID")}</p>
+                        </div>
+                      </div>
+                      
+                      {/* Right: Qty Selector & Subtotal */}
+                      <div className="flex items-center justify-between sm:justify-end gap-3 flex-shrink-0 w-full sm:w-auto border-t border-slate-150 pt-2.5 sm:border-t-0 sm:pt-0">
+                        {/* Quantity Selector */}
+                        <div className="flex items-center border border-slate-200 rounded bg-slate-50 p-0.5">
+                          <button
+                            type="button"
+                            onClick={() => updateAtkQty(item.productId, -1)}
+                            className="w-5.5 h-5.5 flex items-center justify-center text-slate-500 hover:bg-slate-250 hover:bg-slate-200 rounded transition-all text-xs font-bold"
+                          >
+                            -
+                          </button>
+                          <span className="w-6 text-center text-xs font-bold text-slate-800">{item.qty}</span>
+                          <button
+                            type="button"
+                            onClick={() => updateAtkQty(item.productId, 1)}
+                            className="w-5.5 h-5.5 flex items-center justify-center text-slate-500 hover:bg-slate-250 hover:bg-slate-200 rounded transition-all text-xs font-bold"
+                          >
+                            +
+                          </button>
+                        </div>
+                        
+                        {/* Subtotal & Delete */}
+                        <div className="text-right flex flex-col justify-center items-end min-w-[75px]">
+                          <span className="font-extrabold text-slate-900 text-xs">
+                            Rp {(item.unitPrice * item.qty).toLocaleString("id-ID")}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => removeAtkItem(item.productId)}
+                            className="text-[10px] text-red-500 hover:underline font-bold mt-0.5"
+                          >
+                            Hapus
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                    <span className="font-extrabold text-slate-800">
-                      Rp {(item.unitPrice * item.qty).toLocaleString("id-ID")}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
+              </div>
+            </section>
+          ) : (
+            <section className="form-section-anim opacity-0 space-y-4">
+              <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                <h2 className="text-lg font-bold text-slate-800">ATK yang Dipesan</h2>
+              </div>
+              <div className="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-lg text-center text-xs text-slate-400">
+                Belum ada produk ATK yang dipilih. 
+                <a href="/#katalog" className="text-red-500 font-bold ml-1 hover:underline">
+                  Lihat Katalog ATK →
+                </a>
               </div>
             </section>
           )}
+
 
           {/* Notes */}
           <section className="form-section-anim opacity-0 space-y-2">
@@ -689,28 +942,28 @@ export default function OrderConfig() {
           </section>
 
           {/* Price Summary */}
-          <section className="form-section-anim opacity-0 bg-red-50 border border-red-100 p-6 rounded-lg space-y-3">
+          <section className="form-section-anim opacity-0 bg-red-50 border border-red-100 p-4 sm:p-6 rounded-lg space-y-3">
             <h3 className="font-bold text-red-950 text-sm">Rincian Estimasi Biaya</h3>
             
             <div className="space-y-1.5 text-xs text-red-900 border-b border-red-200/50 pb-3">
-              {((selectedFile || mockFileName)) && (
+              {(virtualPages.length > 0) && (
                 <div className="flex justify-between">
-                  <span>Cetak Jasa ({pages} hal x Rp {getPrintUnitPrice().toLocaleString("id-ID")}):</span>
-                  <span>Rp {(getPrintUnitPrice() * pages).toLocaleString("id-ID")}</span>
+                  <span>Cetak Jasa ({pages} hal x {copies} rangkap x Rp {getPrintUnitPrice().toLocaleString("id-ID")}):</span>
+                  <span>Rp {(getPrintUnitPrice() * pages * copies).toLocaleString("id-ID")}</span>
                 </div>
               )}
 
               {hasJilid && (
                 <div className="flex justify-between">
-                  <span>Add-on Jilid:</span>
-                  <span>Rp 5.000</span>
+                  <span>Add-on Jilid ({copies} rangkap):</span>
+                  <span>Rp {(5000 * copies).toLocaleString("id-ID")}</span>
                 </div>
               )}
 
               {hasLaminating && (
                 <div className="flex justify-between">
-                  <span>Add-on Laminating:</span>
-                  <span>Rp 4.000</span>
+                  <span>Add-on Laminating ({copies} rangkap):</span>
+                  <span>Rp {(4000 * copies).toLocaleString("id-ID")}</span>
                 </div>
               )}
 
@@ -746,6 +999,72 @@ export default function OrderConfig() {
             )}
           </button>
         </form>
+
+        {/* Zoom Preview Modal */}
+        {largePreviewPage && (
+          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg shadow-2xl max-w-lg w-full p-6 space-y-4 border-t-8 border-t-slate-900 relative text-xs">
+              <button
+                type="button"
+                onClick={() => setLargePreviewPage(null)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 text-lg font-bold"
+              >
+                ✕
+              </button>
+              
+              <div className="text-center">
+                <h3 className="text-sm font-bold text-slate-800">
+                  Pratinjau Halaman {virtualPages.findIndex(p => p.id === largePreviewPage.id) + 1}
+                </h3>
+                <p className="text-[10px] text-slate-400 mt-0.5">{largePreviewPage.fileName}</p>
+              </div>
+
+              <div className="flex items-center justify-center bg-slate-50 border border-slate-200 rounded p-4 h-96 overflow-hidden">
+                <div 
+                  style={{ transform: `rotate(${largePreviewPage.rotation}deg)` }}
+                  className="w-full h-full flex items-center justify-center transition-transform duration-200"
+                >
+                  {largePreviewPage.previewUrl ? (
+                    <img 
+                      src={largePreviewPage.previewUrl} 
+                      className="max-w-full max-h-full object-contain shadow" 
+                      alt="Pratinjau Besar" 
+                    />
+                  ) : (
+                    // Mock zoom layout
+                    <div className="w-56 h-72 bg-white border border-slate-250 rounded shadow-lg p-4 flex flex-col justify-between select-none">
+                      <span className="text-[10px] font-bold text-slate-400 border-b border-slate-100 pb-1">Tabel Timeline P.pdf</span>
+                      <div className="flex-grow my-4 flex flex-col justify-around">
+                        {renderMockPageContent(largePreviewPage.pageNum)}
+                      </div>
+                      <span className="text-[10px] text-slate-400 text-right font-bold block">Hal {largePreviewPage.pageNum}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 text-xs font-bold pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    rotatePage(largePreviewPage.id);
+                    setLargePreviewPage(prev => prev ? { ...prev, rotation: (prev.rotation + 90) % 360 } : null);
+                  }}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded transition-all"
+                >
+                  🔄 Putar 90°
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLargePreviewPage(null)}
+                  className="px-4 py-2 bg-slate-900 text-white hover:bg-slate-850 rounded transition-all shadow-sm"
+                >
+                  Tutup
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

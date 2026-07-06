@@ -269,6 +269,63 @@ export default function AdminPos() {
     }
   };
 
+  // Online Order Integration
+  const [onlineOrderCode, setOnlineOrderCode] = useState("");
+  const [fetchedOrder, setFetchedOrder] = useState<any>(null);
+  const [fetchingOrder, setFetchingOrder] = useState(false);
+
+  const fetchOnlineOrder = async () => {
+    if (!onlineOrderCode.trim()) {
+      alert("Masukkan kode pesanan terlebih dahulu!");
+      return;
+    }
+    setFetchingOrder(true);
+    setFetchedOrder(null);
+    try {
+      const response = await fetch(`/api/orders/${onlineOrderCode.trim()}`);
+      const data = await response.json();
+      if (response.ok && data.id) {
+        setFetchedOrder(data);
+      } else {
+        alert(data.error || "Pesanan tidak ditemukan");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Gagal menghubungi server");
+    } finally {
+      setFetchingOrder(false);
+    }
+  };
+
+  const confirmOnlineOrderPayment = async (orderId: number, method: "cash" | "qris") => {
+    if (!fetchedOrder) return;
+    
+    if (method === "cash") {
+      try {
+        const response = await fetch(`/api/admin/orders/${orderId}/status`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "selesai" }),
+        });
+        const data = await response.json();
+        if (data.success) {
+          alert(`Pembayaran Tunai Sukses untuk ${fetchedOrder.orderCode}!\nStatus pesanan ditandai sebagai SELESAI.`);
+          setFetchedOrder(null);
+          setOnlineOrderCode("");
+        } else {
+          alert(data.error || "Gagal memperbarui status pesanan");
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Kesalahan koneksi");
+      }
+    } else {
+      // QRIS
+      setActiveOrderCode(fetchedOrder.orderCode);
+      fetchQrDetails(fetchedOrder.id);
+    }
+  };
+
   const resetPOS = () => {
     setPosCart([]);
     setCustomerName("");
@@ -276,6 +333,8 @@ export default function AdminPos() {
     setPaymentMethod("cash");
     setQrCodeString(null);
     setActiveOrderCode(null);
+    setFetchedOrder(null);
+    setOnlineOrderCode("");
   };
 
   return (
@@ -286,6 +345,35 @@ export default function AdminPos() {
         <div>
           <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">Kasir Toko (POS)</h1>
           <p className="text-slate-500 text-xs mt-0.5">Input transaksi pelanggan langsung (walk-in) dan pilih metode pembayaran.</p>
+        </div>
+
+        {/* Tarik Antrean Cetak Online Bar */}
+        <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 flex flex-col sm:flex-row justify-between items-center gap-4 text-left">
+          <div className="flex items-center space-x-3 text-left w-full sm:w-auto">
+            <span className="text-xl">⚡</span>
+            <div>
+              <h3 className="text-sm font-bold text-slate-800">Tarik Antrean Cetak Online</h3>
+              <p className="text-[10px] text-slate-400">Masukkan kode pesanan online pelanggan untuk pemrosesan instan.</p>
+            </div>
+          </div>
+          
+          <div className="flex gap-2 w-full sm:w-auto">
+            <input
+              type="text"
+              placeholder="Contoh: DC-774A"
+              value={onlineOrderCode}
+              onChange={(e) => setOnlineOrderCode(e.target.value.toUpperCase())}
+              className="px-3 h-10 border border-slate-200 rounded text-xs font-bold uppercase focus:outline-none focus:ring-2 focus:ring-red-500 w-full sm:w-48 bg-white"
+            />
+            <button
+              type="button"
+              onClick={fetchOnlineOrder}
+              disabled={fetchingOrder}
+              className="px-4 h-10 bg-slate-900 text-white hover:bg-slate-800 rounded text-xs font-bold transition-all whitespace-nowrap shadow-sm disabled:bg-slate-400"
+            >
+              {fetchingOrder ? "Mencari..." : "Cari Order"}
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -422,6 +510,55 @@ export default function AdminPos() {
 
           {/* Right Area: POS Cart Checkout (5 columns) */}
           <div className="lg:col-span-5 bg-white p-6 rounded-lg border border-slate-200 shadow-sm space-y-6">
+            
+            {/* Online Order Summary Overlay */}
+            {fetchedOrder && (
+              <div className="bg-slate-900 text-white rounded-lg p-5 shadow-lg border border-slate-800 space-y-4 text-xs text-left">
+                <div className="flex justify-between items-center border-b border-slate-800 pb-2">
+                  <span className="text-[10px] font-black tracking-widest text-red-500 uppercase">PESANAN ONLINE DITEMUKAN</span>
+                  <button onClick={() => setFetchedOrder(null)} className="text-slate-400 hover:text-white font-bold text-sm">✕</button>
+                </div>
+                
+                <div>
+                  <h3 className="text-sm font-extrabold">{fetchedOrder.orderCode}</h3>
+                  <p className="text-[10px] text-slate-400">Sumber: Web Pelanggan • Status: <span className="text-amber-400 font-bold uppercase">{fetchedOrder.status}</span></p>
+                </div>
+
+                <div className="space-y-1.5 text-xs border-y border-slate-800 py-3">
+                  {fetchedOrder.items.map((item: any, idx: number) => (
+                    <div key={idx} className="flex justify-between">
+                      <span className="truncate max-w-[180px]">
+                        {item.itemType === 'print_doc' ? `Print (${item.spec.pages || 0} hal x ${item.qty} rangkap)` : item.productName}
+                      </span>
+                      <span className="font-bold">Rp {item.subtotal.toLocaleString("id-ID")}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex justify-between items-center pt-1">
+                  <span className="text-xs font-bold text-slate-400">Total Tagihan:</span>
+                  <span className="text-base font-black text-red-500">Rp {fetchedOrder.totalAmount.toLocaleString("id-ID")}</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => confirmOnlineOrderPayment(fetchedOrder.id, "cash")}
+                    className="py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[11px] font-extrabold transition-all text-center flex items-center justify-center gap-1"
+                  >
+                    💵 Bayar Tunai
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => confirmOnlineOrderPayment(fetchedOrder.id, "qris")}
+                    className="py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[11px] font-extrabold transition-all text-center flex items-center justify-center gap-1"
+                  >
+                    📱 Bayar QRIS Pas
+                  </button>
+                </div>
+              </div>
+            )}
+
             <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Transaksi Aktif</h2>
 
             {/* Cart Items list */}
@@ -601,7 +738,11 @@ export default function AdminPos() {
             </div>
 
             <div className="text-xs font-bold text-slate-850">
-              Total Pembayaran: <span className="text-red-600 text-sm font-extrabold">Rp {getCartTotal().toLocaleString("id-ID")}</span>
+              Total Pembayaran: <span className="text-red-600 text-sm font-extrabold">
+                Rp {activeOrderCode && fetchedOrder && activeOrderCode === fetchedOrder.orderCode
+                  ? fetchedOrder.totalAmount.toLocaleString("id-ID")
+                  : getCartTotal().toLocaleString("id-ID")}
+              </span>
             </div>
 
             {/* Action check buttons */}

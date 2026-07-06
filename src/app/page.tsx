@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Link from "next/link";
 import gsap from "gsap";
+import { Gift, Plus, Minus } from "lucide-react";
 
 interface Product {
   id: number;
@@ -210,9 +211,7 @@ export default function Home() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-red-600 text-white rounded-full">
-              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5a2 2 0 10-2 2h2zm-2 4h10M4 18c0-1.1.9-2 2-2h12a2 2 0 012 2M4 18v-4a2 2 0 012-2h12a2 2 0 012 2v4M4 18H3a1 1 0 01-1-1v-2a1 1 0 011-1h1M19 18h1a1 1 0 001-1v-2a1 1 0 00-1-1h-1" />
-              </svg>
+              <Gift className="w-8 h-8" />
             </div>
             <div>
               <h3 className="text-lg font-bold text-red-950">Program Loyalitas Stempel Digital!</h3>
@@ -314,20 +313,16 @@ export default function Home() {
                       <div className="flex items-center justify-between w-full">
                         <button
                           onClick={() => updateCart(p.id, -1)}
-                          className="p-1 text-slate-500 border border-slate-300 rounded hover:bg-white"
+                          className="p-1 text-slate-500 border border-slate-300 rounded hover:bg-white flex items-center justify-center"
                         >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-                          </svg>
+                          <Minus className="w-4 h-4" />
                         </button>
                         <span className="text-sm font-bold text-slate-800">{qtyInCart}</span>
                         <button
                           onClick={() => updateCart(p.id, 1)}
-                          className="p-1 text-slate-500 border border-slate-300 rounded hover:bg-white"
+                          className="p-1 text-slate-500 border border-slate-300 rounded hover:bg-white flex items-center justify-center"
                         >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                          </svg>
+                          <Plus className="w-4 h-4" />
                         </button>
                       </div>
                     )}

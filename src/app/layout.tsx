@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 
@@ -10,6 +10,12 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "DIGICAKRA — One-Stop QRIS Solution untuk Fotocopy Cakrawala",
   description: "Platform digital terintegrasi untuk pemesanan jasa print online, pemesanan ATK, kasir (POS), pembayaran QRIS & tunai, pelacakan pesanan, dan perhitungan pajak otomatis.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default function RootLayout({

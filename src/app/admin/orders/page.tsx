@@ -31,6 +31,7 @@ interface Order {
   payment: {
     status: string;
     paymentMethod: string;
+    paymentGatewayRef: string | null;
   } | null;
 }
 
@@ -40,6 +41,7 @@ export default function AdminOrders() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const [selectedReceiptImage, setSelectedReceiptImage] = useState<string | null>(null);
 
   const loadOrders = () => {
     setLoading(true);
@@ -69,7 +71,7 @@ export default function AdminOrders() {
     loadOrders();
   };
 
-  const updateOrderStatus = async (orderId: number, newStatus: string) => {
+  const updateOrderStatus = async (orderId: number, newStatus: string, orderObj?: Order) => {
     try {
       const response = await fetch(`/api/admin/orders/${orderId}/status`, {
         method: "PATCH",
@@ -79,6 +81,10 @@ export default function AdminOrders() {
       const data = await response.json();
       
       if (data.success) {
+        // If status changed to siap_diambil, automatically open WA API chat
+        if (newStatus === "siap_diambil" && orderObj) {
+          sendWaNotification(orderObj);
+        }
         // Refresh orders list
         loadOrders();
       } else {
@@ -123,8 +129,11 @@ export default function AdminOrders() {
     window.open(waUrl, "_blank");
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
+  const getStatusBadge = (order: Order) => {
+    if (order.status === "menunggu_pembayaran" && order.payment?.paymentMethod === "manual_qris" && order.payment?.status === "pending") {
+      return <span className="px-2 py-0.5 bg-yellow-100 text-yellow-800 border border-yellow-300 rounded text-[10px] font-extrabold uppercase animate-pulse">Menunggu Verifikasi</span>;
+    }
+    switch (order.status) {
       case "menunggu_pembayaran":
         return <span className="px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 rounded text-[10px] font-bold uppercase">Belum Bayar</span>;
       case "diterima":
@@ -138,7 +147,7 @@ export default function AdminOrders() {
       case "dibatalkan":
         return <span className="px-2 py-0.5 bg-red-50 text-red-700 border border-red-200 rounded text-[10px] font-bold uppercase">Batal</span>;
       default:
-        return <span className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-[10px] font-bold uppercase">{status}</span>;
+        return <span className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-[10px] font-bold uppercase">{order.status}</span>;
     }
   };
 
@@ -247,7 +256,7 @@ export default function AdminOrders() {
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-extrabold text-slate-800">{order.orderCode}</span>
-                      {getStatusBadge(order.status)}
+                      {getStatusBadge(order)}
                       {getSourceBadge(order.orderSource)}
                     </div>
                     
@@ -337,7 +346,7 @@ export default function AdminOrders() {
 
                   {order.status === "diproses" && (
                     <button
-                      onClick={() => updateOrderStatus(order.id, "siap_diambil")}
+                      onClick={() => updateOrderStatus(order.id, "siap_diambil", order)}
                       className="w-full py-2 px-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-bold shadow-sm transition-all"
                     >
                       Tandai Siap Diambil
@@ -354,12 +363,32 @@ export default function AdminOrders() {
                   )}
 
                   {order.status === "menunggu_pembayaran" && (
-                    <button
-                      onClick={() => updateOrderStatus(order.id, "diterima")}
-                      className="w-full py-2 px-3 bg-amber-600 hover:bg-amber-700 text-white rounded text-xs font-bold shadow-sm transition-all"
-                    >
-                      Konfirmasi Bayar Manual
-                    </button>
+                    <>
+                      {order.payment?.paymentMethod === "manual_qris" && order.payment?.status === "pending" ? (
+                        <div className="space-y-1.5 w-full">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedReceiptImage(order.payment?.paymentGatewayRef || null)}
+                            className="w-full py-1.5 px-3 bg-amber-100 hover:bg-amber-250 text-amber-800 border border-amber-300 rounded text-[11px] font-bold transition-all text-center flex items-center justify-center gap-1"
+                          >
+                            👁️ Lihat Bukti QRIS
+                          </button>
+                          <button
+                            onClick={() => updateOrderStatus(order.id, "diterima")}
+                            className="w-full py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-bold shadow-sm transition-all"
+                          >
+                            Setujui Pembayaran
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => updateOrderStatus(order.id, "diterima")}
+                          className="w-full py-2 px-3 bg-amber-600 hover:bg-amber-700 text-white rounded text-xs font-bold shadow-sm transition-all"
+                        >
+                          Konfirmasi Bayar Manual
+                        </button>
+                      )}
+                    </>
                   )}
 
                   {order.status !== "selesai" && order.status !== "dibatalkan" && (
@@ -406,6 +435,35 @@ export default function AdminOrders() {
         )}
 
       </div>
+
+      {/* Receipt Preview Modal */}
+      {selectedReceiptImage && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-2xl max-w-sm w-full p-5 space-y-4 border-t-8 border-t-amber-500 text-xs relative text-center">
+            <button
+              type="button"
+              onClick={() => setSelectedReceiptImage(null)}
+              className="absolute top-3 right-3 text-slate-400 hover:text-slate-700 text-lg font-bold"
+            >
+              ✕
+            </button>
+            <div>
+              <h3 className="text-sm font-bold text-slate-800">Bukti Transfer Pembayaran</h3>
+              <p className="text-[10px] text-slate-400 mt-0.5">Unggahan Bukti QRIS Pelanggan</p>
+            </div>
+            <div className="border border-slate-200 rounded p-2 bg-slate-50 flex items-center justify-center max-h-[360px] overflow-hidden">
+              <img src={selectedReceiptImage} className="max-w-full max-h-[320px] object-contain rounded shadow-sm" alt="Bukti Transfer Upload" />
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelectedReceiptImage(null)}
+              className="w-full py-2 bg-slate-900 hover:bg-slate-850 text-white rounded font-bold transition-all text-center"
+            >
+              Tutup
+            </button>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 }

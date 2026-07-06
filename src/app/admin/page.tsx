@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import Link from "next/link";
 import gsap from "gsap";
+import { Calculator, ClipboardList, ShoppingBag } from "lucide-react";
 
 interface DashboardSummary {
   todayRevenue: number;
@@ -164,10 +165,8 @@ export default function AdminDashboard() {
               href="/admin/pos"
               className="flex items-center space-x-3 p-4 bg-slate-50 border border-slate-200 rounded-lg hover:border-red-300 hover:bg-red-50/10 transition-all group"
             >
-              <div className="p-2 bg-red-100 text-red-600 rounded">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                </svg>
+              <div className="p-2 bg-red-100 text-red-600 rounded flex items-center justify-center">
+                <Calculator className="w-5 h-5" />
               </div>
               <div>
                 <span className="text-xs font-bold text-slate-800 block group-hover:text-red-600">Buka Layar Kasir (POS)</span>
@@ -179,10 +178,8 @@ export default function AdminDashboard() {
               href="/admin/orders"
               className="flex items-center space-x-3 p-4 bg-slate-50 border border-slate-200 rounded-lg hover:border-red-300 hover:bg-red-50/10 transition-all group"
             >
-              <div className="p-2 bg-red-100 text-red-600 rounded">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
+              <div className="p-2 bg-red-100 text-red-600 rounded flex items-center justify-center">
+                <ClipboardList className="w-5 h-5" />
               </div>
               <div>
                 <span className="text-xs font-bold text-slate-800 block group-hover:text-red-600">Proses Antrean Jasa</span>
@@ -194,10 +191,8 @@ export default function AdminDashboard() {
               href="/admin/products"
               className="flex items-center space-x-3 p-4 bg-slate-50 border border-slate-200 rounded-lg hover:border-red-300 hover:bg-red-50/10 transition-all group"
             >
-              <div className="p-2 bg-red-100 text-red-600 rounded">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                </svg>
+              <div className="p-2 bg-red-100 text-red-600 rounded flex items-center justify-center">
+                <ShoppingBag className="w-5 h-5" />
               </div>
               <div>
                 <span className="text-xs font-bold text-slate-800 block group-hover:text-red-600">Katalog Produk ATK</span>
