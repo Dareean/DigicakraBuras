@@ -42,12 +42,10 @@ export async function GET() {
       },
     });
 
-    // 4. Low Stock items count (both products & operational inventory)
-    const lowStockInventoryCount = await prisma.inventoryItem.count({
-      where: {
-        currentQty: { lte: prisma.inventoryItem.fields.minThreshold },
-      },
-    });
+    const inventoryItems = await prisma.inventoryItem.findMany();
+    const lowStockInventoryCount = inventoryItems.filter(
+      (item) => item.currentQty <= item.minThreshold
+    ).length;
 
     const lowStockProductsCount = await prisma.product.count({
       where: {
