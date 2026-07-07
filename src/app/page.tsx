@@ -10,6 +10,7 @@ interface Product {
   id: number;
   name: string;
   description: string;
+  imageUrl?: string;
   price: number;
   stockQty: number;
   category: string;
@@ -279,20 +280,33 @@ export default function Home() {
               const qtyInCart = cart[p.id] || 0;
               return (
                 <div key={p.id} className="catalog-anim-card opacity-0 bg-white rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between overflow-hidden hover:shadow-md transition-all">
-                  <div className="p-6">
-                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-red-600 block mb-1">
-                      {p.category}
-                    </span>
-                    <h3 className="font-bold text-slate-800 text-base mb-1">{p.name}</h3>
-                    <p className="text-xs text-slate-500 line-clamp-2 mb-4">{p.description}</p>
-                    
-                    <div className="flex items-baseline justify-between mt-2">
-                      <span className="text-lg font-extrabold text-slate-900">
-                        Rp {p.price.toLocaleString("id-ID")}
+                  <div>
+                    {/* Product Image */}
+                    <div className="relative aspect-video w-full bg-slate-100 border-b border-slate-100 overflow-hidden group">
+                      <img
+                        src={p.imageUrl || "/placeholder.png"}
+                        alt={p.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = `https://placehold.co/300x200/e2e8f0/475569?text=${encodeURIComponent(p.name)}`;
+                        }}
+                      />
+                    </div>
+                    <div className="p-6">
+                      <span className="text-[10px] font-extrabold uppercase tracking-widest text-red-600 block mb-1">
+                        {p.category}
                       </span>
-                      <span className={`text-xs ${p.stockQty > 5 ? "text-slate-400" : "text-amber-600 font-bold"}`}>
-                        Stok: {p.stockQty}
-                      </span>
+                      <h3 className="font-bold text-slate-800 text-base mb-1">{p.name}</h3>
+                      <p className="text-xs text-slate-500 line-clamp-2 mb-4">{p.description}</p>
+                      
+                      <div className="flex items-baseline justify-between mt-2">
+                        <span className="text-lg font-extrabold text-slate-900">
+                          Rp {p.price.toLocaleString("id-ID")}
+                        </span>
+                        <span className={`text-xs ${p.stockQty > 5 ? "text-slate-400" : "text-amber-600 font-bold"}`}>
+                          Stok: {p.stockQty}
+                        </span>
+                      </div>
                     </div>
                   </div>
 

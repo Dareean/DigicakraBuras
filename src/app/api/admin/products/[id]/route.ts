@@ -17,7 +17,7 @@ export async function PUT(
     const productId = Number(id);
 
     const body = await request.json();
-    const { name, description, price, stockQty, category, isActive } = body;
+    const { name, description, imageUrl, price, stockQty, category, isActive } = body;
 
     const product = await prisma.product.findUnique({
       where: { id: productId },
@@ -39,6 +39,7 @@ export async function PUT(
       // Owner can update everything
       if (name !== undefined) updateData.name = name;
       if (description !== undefined) updateData.description = description;
+      if (imageUrl !== undefined) updateData.imageUrl = imageUrl;
       if (price !== undefined) updateData.price = Number(price);
       if (stockQty !== undefined) updateData.stockQty = Number(stockQty);
       if (category !== undefined) updateData.category = category;

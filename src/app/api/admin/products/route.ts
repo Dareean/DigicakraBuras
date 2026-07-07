@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { name, description, price, stockQty, category, isActive } = body;
+    const { name, description, imageUrl, price, stockQty, category, isActive } = body;
 
     if (!name || price === undefined || stockQty === undefined || !category) {
       return NextResponse.json({ error: "Kolom nama, harga, stok, dan kategori wajib diisi" }, { status: 400 });
@@ -41,6 +41,7 @@ export async function POST(request: Request) {
       data: {
         name,
         description: description || "",
+        imageUrl: imageUrl || "",
         price: Number(price),
         stockQty: Number(stockQty),
         category,

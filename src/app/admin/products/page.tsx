@@ -7,6 +7,7 @@ interface Product {
   id: number;
   name: string;
   description: string;
+  imageUrl?: string;
   price: number;
   stockQty: number;
   category: string;
@@ -23,6 +24,7 @@ export default function AdminProducts() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
   const [price, setPrice] = useState(0);
   const [stockQty, setStockQty] = useState(0);
   const [category, setCategory] = useState("Alat Tulis");
@@ -59,6 +61,7 @@ export default function AdminProducts() {
     setEditingProduct(null);
     setName("");
     setDescription("");
+    setImageUrl("");
     setPrice(0);
     setStockQty(0);
     setCategory("Alat Tulis");
@@ -70,6 +73,7 @@ export default function AdminProducts() {
     setEditingProduct(p);
     setName(p.name);
     setDescription(p.description);
+    setImageUrl(p.imageUrl || "");
     setPrice(p.price);
     setStockQty(p.stockQty);
     setCategory(p.category);
@@ -90,6 +94,7 @@ export default function AdminProducts() {
       : {
           name,
           description,
+          imageUrl,
           price: Number(price),
           stockQty: Number(stockQty),
           category,
@@ -185,9 +190,21 @@ export default function AdminProducts() {
                 <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
                   {products.map((p) => (
                     <tr key={p.id} className="hover:bg-slate-50/50">
-                      <td className="px-6 py-4">
-                        <span className="font-bold text-slate-800 block">{p.name}</span>
-                        <span className="text-[10px] text-slate-400 mt-0.5 line-clamp-1">{p.description || "-"}</span>
+                      <td className="px-6 py-4 flex items-center space-x-3">
+                        <div className="w-10 h-10 rounded border border-slate-200 overflow-hidden bg-slate-100 flex-shrink-0 flex items-center justify-center">
+                          <img
+                            src={p.imageUrl || "/placeholder.png"}
+                            alt={p.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = `https://placehold.co/100x100/e2e8f0/475569?text=ATK`;
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <span className="font-bold text-slate-800 block">{p.name}</span>
+                          <span className="text-[10px] text-slate-400 mt-0.5 line-clamp-1">{p.description || "-"}</span>
+                        </div>
                       </td>
                       <td className="px-6 py-4">{p.category}</td>
                       <td className="px-6 py-4 font-bold text-slate-900">
@@ -267,6 +284,20 @@ export default function AdminProducts() {
                   onChange={(e) => setDescription(e.target.value)}
                   disabled={editingProduct !== null && userRole === "staff"}
                   className="w-full px-3 py-1.5 border border-slate-200 rounded focus:outline-none focus:border-red-500 font-medium bg-white disabled:bg-slate-100 disabled:text-slate-400 h-16 resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                  URL/Path Foto Produk
+                </label>
+                <input
+                  type="text"
+                  value={imageUrl}
+                  onChange={(e) => setImageUrl(e.target.value)}
+                  disabled={editingProduct !== null && userRole === "staff"}
+                  placeholder="/assets/katalog/nama-file.jpeg"
+                  className="w-full px-3 h-9 border border-slate-200 rounded focus:outline-none focus:border-red-500 font-medium bg-white disabled:bg-slate-100 disabled:text-slate-400"
                 />
               </div>
 
