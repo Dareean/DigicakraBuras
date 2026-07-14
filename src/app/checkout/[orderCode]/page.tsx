@@ -50,9 +50,7 @@ export default function CheckoutPayment() {
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
 
-  const [paymentMode, setPaymentMode] = useState<"dynamic" | "static">("dynamic");
-  const [receiptImage, setReceiptImage] = useState<string | null>(null);
-  const [uploadingReceipt, setUploadingReceipt] = useState(false);
+
 
   // GSAP Column animations when order details load
   useEffect(() => {
@@ -139,43 +137,7 @@ export default function CheckoutPayment() {
     }
   };
 
-  const handleReceiptChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setReceiptImage(event.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
 
-  const submitManualPayment = async () => {
-    if (!receiptImage) {
-      alert("Pilih berkas bukti transfer terlebih dahulu!");
-      return;
-    }
-    setUploadingReceipt(true);
-    try {
-      const res = await fetch(`/api/orders/${orderCode}/manual-payment`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ receiptBase64: receiptImage }),
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        alert("Bukti pembayaran berhasil dikirim! Menunggu konfirmasi kasir.");
-        fetchOrderDetails();
-      } else {
-        alert(data.error || "Gagal mengirim bukti pembayaran");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Koneksi gagal");
-    } finally {
-      setUploadingReceipt(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -325,35 +287,13 @@ export default function CheckoutPayment() {
             ) : (
               /* PAYMENT SELECTION STATE */
               <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-sm text-center space-y-6 flex flex-col items-center">
-                
-                {/* Tab Switcher */}
-                <div className="flex bg-slate-100 p-1 rounded-md w-full">
-                  <button
-                    onClick={() => setPaymentMode("dynamic")}
-                    className={`flex-1 py-1.5 text-[11px] font-bold rounded transition-all ${
-                      paymentMode === "dynamic" ? "bg-white text-slate-850 shadow-sm" : "text-slate-500 hover:text-slate-800"
-                    }`}
-                  >
-                    QRIS Otomatis
-                  </button>
-                  <button
-                    onClick={() => setPaymentMode("static")}
-                    className={`flex-1 py-1.5 text-[11px] font-bold rounded transition-all ${
-                      paymentMode === "static" ? "bg-white text-slate-850 shadow-sm" : "text-slate-500 hover:text-slate-800"
-                    }`}
-                  >
-                    QRIS Manual (Scan QR Toko)
-                  </button>
-                </div>
 
-                {paymentMode === "dynamic" ? (
-                  /* DYNAMIC QRIS PANEL */
-                  <>
+                {/* DYNAMIC QRIS PANEL */}
                     <div>
                       <span className="text-xs font-bold text-red-650 bg-red-50 px-2.5 py-1 rounded-full border border-red-100 uppercase tracking-wider">
                         Menunggu Pembayaran
                       </span>
-                      <h3 className="text-lg font-bold text-slate-800 mt-3">Pembayaran QRIS Dinamis</h3>
+                      <h3 className="text-lg font-bold text-slate-800 mt-3">Pembayaran QRIS</h3>
                       <p className="text-xs text-slate-400 mt-1">Silakan scan kode QRIS di bawah ini</p>
                     </div>
 
@@ -409,85 +349,6 @@ export default function CheckoutPayment() {
                         )}
                       </button>
                     </div>
-                  </>
-                ) : (
-                  /* STATIC QRIS PANEL (MANUAL UPLOAD) */
-                  <>
-                    <div>
-                      <span className="text-xs font-bold text-slate-650 bg-slate-50 px-2.5 py-1 rounded-full border border-slate-200 uppercase tracking-wider">
-                        Scan QR & Upload Bukti
-                      </span>
-                      <h3 className="text-lg font-bold text-slate-800 mt-3">Pembayaran QRIS Statis Toko</h3>
-                      <p className="text-xs text-slate-450 mt-1">Scan QR, ketik nominal Rp {order.totalAmount.toLocaleString("id-ID")}, lalu unggah bukti transfer.</p>
-                    </div>
-
-                    {/* QRIS Static sticker Frame */}
-                    <div className="border border-slate-200 rounded-lg overflow-hidden max-w-[270px] w-full shadow-md bg-white">
-                      <div className="bg-red-650 p-2.5 bg-red-600 flex items-center justify-between text-white font-extrabold text-[10px] tracking-widest">
-                        <span>QRIS STATIS</span>
-                        <span className="text-[7.5px] font-bold">GPN / BI</span>
-                      </div>
-                      
-                      {/* QR Code Body */}
-                      <div className="p-4 flex items-center justify-center bg-white border-b border-slate-100">
-                        <img
-                          src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent("00020101021126590016ID102008320473901021200140200384729052040000530336054071400005802ID5920FOTOCOPY%20CAKRAWALA6005MEDAN610520263620707030101")}`}
-                          alt="Static QRIS Code"
-                          className="w-48 h-48"
-                        />
-                      </div>
-
-                      <div className="p-3 bg-slate-50 text-[10px] text-slate-700 font-bold text-center">
-                        FOTOCOPY CAKRAWALA
-                      </div>
-                    </div>
-
-                    {/* Uploader field */}
-                    <div className="w-full space-y-3 text-left">
-                      <label className="block text-xs font-bold text-slate-700">Pilih Foto Bukti Transfer / Pembayaran:</label>
-                      
-                      <div className="flex items-center gap-4">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleReceiptChange}
-                          className="block w-full text-xs text-slate-500
-                            file:mr-4 file:py-2 file:px-4
-                            file:rounded-md file:border-0
-                            file:text-[10px] file:font-extrabold
-                            file:bg-red-50 file:text-red-750
-                            hover:file:bg-red-100 file:cursor-pointer"
-                        />
-                      </div>
-
-                      {receiptImage && (
-                        <div className="border border-slate-200 rounded p-2.5 bg-slate-50 flex items-center gap-3">
-                          <img src={receiptImage} className="w-12 h-16 object-contain rounded border border-slate-200" alt="Bukti Upload" />
-                          <div>
-                            <span className="text-[10px] font-bold text-slate-800">Pratinjau Bukti</span>
-                            <p className="text-[9px] text-slate-400">Siap dikirim ke kasir</p>
-                          </div>
-                        </div>
-                      )}
-
-                      <button
-                        type="button"
-                        onClick={submitManualPayment}
-                        disabled={uploadingReceipt || !receiptImage}
-                        className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded text-xs font-bold transition-all flex items-center justify-center shadow disabled:bg-slate-100 disabled:text-slate-400"
-                      >
-                        {uploadingReceipt ? (
-                          <>
-                            <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent mr-2"></div>
-                            Mengirim...
-                          </>
-                        ) : (
-                          "Kirim Bukti Pembayaran"
-                        )}
-                      </button>
-                    </div>
-                  </>
-                )}
               </div>
             )
           ) : (
