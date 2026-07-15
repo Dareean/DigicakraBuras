@@ -15,6 +15,7 @@
     "bcryptjs": "^3.0.3",
     "gsap": "^3.15.0",
     "lucide-react": "^1.23.0",
+    "midtrans-client": "^1.4.3",
     "next": "16.2.10",
     "react": "19.2.4",
     "react-dom": "19.2.4"
@@ -22,6 +23,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/bcryptjs": "^2.4.6",
+    "@types/midtrans-client": "^1.4.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

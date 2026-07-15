@@ -39,10 +39,10 @@ export default function AdminDashboard() {
         { opacity: 0, y: 20 },
         { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, ease: "power2.out", overwrite: "auto" }
       );
-      // Sales chart bars
+      // Bar chart: animate via clipPath agar tidak conflict dengan Tailwind transform utilities
       gsap.fromTo(".chart-anim-bar",
-        { scaleY: 0 },
-        { scaleY: 1, duration: 0.8, ease: "power2.out", transformOrigin: "bottom", stagger: 0.08, delay: 0.2, overwrite: "auto" }
+        { clipPath: "inset(100% 0 0 0)" },
+        { clipPath: "inset(0% 0 0 0)", duration: 0.7, ease: "power2.out", stagger: 0.08, delay: 0.2, overwrite: "auto" }
       );
     }
   }, [loading, summary]);
@@ -130,30 +130,44 @@ export default function AdminDashboard() {
             <p className="text-[11px] text-slate-400 mt-0.5">Statistik pendapatan harian selama 7 hari terakhir.</p>
           </div>
 
-          <div className="flex justify-between items-end h-48 pt-4 px-2 border-b border-slate-100">
+          {/* Container chart: h-48 fixed, items-end agar bar tumbuh dari bawah */}
+          <div className="flex justify-around items-end h-48 border-b border-slate-100 pb-0">
             {summary?.weeklyChartData.map((dayData, idx) => {
-              // calculate percentage height
-              const heightPercent = Math.max(5, Math.round((dayData.revenue / maxRevenue) * 100));
+              const heightPercent = Math.max(4, Math.round((dayData.revenue / maxRevenue) * 100));
+              const isToday = idx === (summary.weeklyChartData.length - 1);
               return (
-                <div key={idx} className="flex flex-col items-center w-1/8 space-y-2 group">
-                  {/* Tooltip on hover */}
-                  <span className="opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow absolute transform -translate-y-8">
-                    Rp {dayData.revenue.toLocaleString("id-ID")}
-                  </span>
-                  
-                  {/* Bar */}
+                <div key={idx} className="relative flex flex-col items-center gap-1.5 group" style={{ height: "100%", justifyContent: "flex-end" }}>
+
+                  {/* Tooltip hover */}
+                  {dayData.revenue > 0 && (
+                    <span className="pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity absolute bottom-full mb-1 bg-slate-800 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow whitespace-nowrap z-10">
+                      Rp {dayData.revenue.toLocaleString("id-ID")}
+                    </span>
+                  )}
+
+                  {/* Bar — clipPath animation dari bawah ke atas */}
                   <div
-                    style={{ height: `${heightPercent}%` }}
-                    className="chart-anim-bar w-8 bg-red-500 rounded-t group-hover:bg-red-600 transition-all shadow-sm flex items-end justify-center origin-bottom"
-                  ></div>
-                  
-                  {/* Label */}
-                  <span className="text-[10px] font-bold text-slate-400">
+                    className="chart-anim-bar w-7 rounded-t transition-colors shadow-sm"
+                    style={{
+                      height: `${heightPercent}%`,
+                      backgroundColor: isToday ? "#dc2626" : dayData.revenue > 0 ? "#f87171" : "#e2e8f0",
+                    }}
+                  />
+
+                  {/* Label hari */}
+                  <span className={`text-[10px] font-bold ${isToday ? "text-red-600" : "text-slate-400"}`}>
                     {dayData.day}
                   </span>
                 </div>
               );
             })}
+          </div>
+
+          {/* Legend */}
+          <div className="flex items-center gap-4 text-[10px] text-slate-400 pt-1">
+            <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-3 rounded-sm bg-red-600"></span> Hari ini</span>
+            <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-3 rounded-sm bg-red-300"></span> Ada pendapatan</span>
+            <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-3 rounded-sm bg-slate-200"></span> Tidak ada transaksi</span>
           </div>
         </div>
 
