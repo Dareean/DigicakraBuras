@@ -192,6 +192,7 @@ export default function OrderConfig() {
   // File upload state
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [virtualPages, setVirtualPages] = useState<VirtualPage[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [largePreviewPage, setLargePreviewPage] = useState<VirtualPage | null>(null);
   const [excludedPages, setExcludedPages] = useState<string[]>([]);
   const [hoveredPage, setHoveredPage] = useState<number>(1);
@@ -218,6 +219,7 @@ export default function OrderConfig() {
   const [pickupNote, setPickupNote] = useState("");
 
   const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("Memproses Pesanan...");
 
   useEffect(() => {
     // Load ATK items if any
@@ -234,7 +236,9 @@ export default function OrderConfig() {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       setLoading(true);
+      setLoadingMessage("Membaca berkas...");
       const files = Array.from(e.target.files);
+      setSelectedFiles((prev) => [...prev, ...files]);
       const newPages: VirtualPage[] = [];
 
       for (const file of files) {
@@ -370,13 +374,13 @@ export default function OrderConfig() {
     let sum = 0;
     if (hasJilid) sum += 5000;
     if (hasLaminating) sum += 4000;
-    return sum;
+    return sum * copies;
   };
 
   const getPrintSubtotal = () => {
     const isFileUploaded = virtualPages.length > 0;
     if (!isFileUploaded) return 0;
-    return (getPrintUnitPrice() * pages) + getPrintAddonsTotal();
+    return (getPrintUnitPrice() * pages * copies) + getPrintAddonsTotal();
   };
 
   const getAtkTotal = () => {
@@ -415,22 +419,25 @@ export default function OrderConfig() {
 
     if (hasFile) {
       const addons = [];
-      if (hasJilid) addons.push({ addonType: "jilid", price: 5000 });
-      if (hasLaminating) addons.push({ addonType: "laminating", price: 4000 });
+      if (hasJilid) addons.push({ addonType: "jilid", price: 5000 * copies });
+      if (hasLaminating) addons.push({ addonType: "laminating", price: 4000 * copies });
 
       const printedPages = virtualPages
         .map((vp, idx) => ({ ...vp, seq: idx + 1 }))
         .filter((vp) => !excludedPages.includes(vp.id))
         .map((vp) => vp.seq);
 
+      const actualPages = virtualPages.length - excludedPages.length;
+
       orderItems.push({
         itemType: "print_doc",
         productId: null,
-        qty: 1,
-        unitPrice: getPrintUnitPrice(),
+        qty: copies,
+        unitPrice: getPrintUnitPrice() * actualPages,
         fileUrl: virtualPages[0]?.fileName || "dokumen_cetak.pdf",
         specJson: {
-          pages: virtualPages.length - excludedPages.length,
+          pages: actualPages,
+          copies: copies,
           color: colorType,
           fileName: virtualPages.map(vp => vp.fileName).filter((v, i, a) => a.indexOf(v) === i).join(", "),
           printedPages: printedPages.length > 0 ? printedPages : [1],
@@ -453,6 +460,7 @@ export default function OrderConfig() {
     const orderType = hasFile && hasAtk ? "mixed" : hasFile ? "print" : "atk";
 
     try {
+      setLoadingMessage("Memproses pesanan...");
       const response = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -469,6 +477,29 @@ export default function OrderConfig() {
       const data = await response.json();
 
       if (data.success) {
+        // Find which files from selectedFiles are actually in virtualPages
+        const activeFileNames = new Set(virtualPages.map((p) => p.fileName));
+        const filesToUpload = selectedFiles.filter((f) => activeFileNames.has(f.name));
+
+        if (filesToUpload.length > 0) {
+          setLoadingMessage("Mengunggah berkas cetak...");
+          const formData = new FormData();
+          formData.append("orderId", String(data.orderId));
+          filesToUpload.forEach((file) => {
+            formData.append("files", file);
+          });
+
+          const uploadRes = await fetch("/api/upload/print-document", {
+            method: "POST",
+            body: formData,
+          });
+
+          const uploadData = await uploadRes.json();
+          if (!uploadData.success) {
+            throw new Error(uploadData.error || "Gagal mengunggah berkas cetak");
+          }
+        }
+
         // Clear local storage cart
         localStorage.removeItem("atk_cart");
         // Redirect to checkout payment
@@ -476,9 +507,9 @@ export default function OrderConfig() {
       } else {
         alert(data.error || "Gagal memproses pesanan");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Terjadi kesalahan koneksi");
+      alert(err.message || "Terjadi kesalahan koneksi");
     } finally {
       setLoading(false);
     }
@@ -992,7 +1023,7 @@ export default function OrderConfig() {
             {loading ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                Memproses Pesanan...
+                {loadingMessage}
               </>
             ) : (
               "Lanjut ke Checkout"
