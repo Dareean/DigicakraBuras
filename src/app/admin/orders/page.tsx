@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import AdminLayout from "@/components/AdminLayout";
+import { Download } from "lucide-react";
 
 interface Order {
   id: number;
@@ -93,6 +94,32 @@ export default function AdminOrders() {
     } catch (e) {
       console.error(e);
       alert("Kesalahan koneksi");
+    }
+  };
+
+  const handleOpenDocument = async (path: string, orderStatus: string) => {
+    if (orderStatus === "selesai") {
+      alert("Pesanan ini sudah selesai. Berkas dokumen telah dihapus");
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/admin/orders/document-url?path=${encodeURIComponent(path)}`);
+      const data = await response.json();
+      if (data.success && data.urls) {
+        data.urls.forEach((item: any) => {
+          if (item.signedUrl) {
+            window.open(item.signedUrl, "_blank");
+          } else {
+            alert(`Gagal membuka file: ${item.error || "Unknown error"}`);
+          }
+        });
+      } else {
+        alert(data.error || "Gagal mendapatkan tautan berkas");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Kesalahan koneksi saat mengambil berkas");
     }
   };
 
@@ -293,9 +320,25 @@ export default function AdminOrders() {
                       <div key={idx} className="text-xs pt-2 first:pt-0">
                         <div className="flex justify-between items-start">
                           <div>
-                            <span className="font-bold text-slate-800">
-                              {item.itemType === "atk" ? (item.productName || "Item ATK") : `Print: ${item.fileUrl}`}
-                            </span>
+                            <div className="flex items-center gap-4 pb-1 flex-wrap">
+                              <span className="font-bold text-slate-800">
+                                {item.itemType === "atk" ? (item.productName || "Item ATK") : "Cetak Dokumen"}
+                              </span>
+                              {item.itemType === "print_doc" && item.fileUrl && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenDocument(item.fileUrl!, order.status)}
+                                  className="px-2 py-0.5 bg-red-50 hover:bg-red-100 text-red-650 rounded border border-red-200 text-[10px] font-extrabold transition-all cursor-pointer flex items-center gap-1"
+                                >
+                                  <Download size={13}/> Unduh
+                                </button>
+                              )}
+                            </div>
+                            {item.itemType === "print_doc" && (
+                              <p className="text-[10px] text-slate-550 font-medium truncate max-w-[280px] mt-0.5">
+                                File: {item.fileUrl || "dokumen.pdf"}
+                              </p>
+                            )}
                             {item.itemType === "print_doc" && (
                               <div className="text-slate-400 text-[11px] mt-0.5 space-y-0.5">
                                 <p>Spec: {item.spec.pages} Hal, {item.spec.color === "bw" ? "Hitam Putih" : "Warna"}</p>

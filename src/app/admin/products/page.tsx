@@ -25,6 +25,7 @@ export default function AdminProducts() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [price, setPrice] = useState(0);
   const [stockQty, setStockQty] = useState(0);
   const [category, setCategory] = useState("Alat Tulis");
@@ -53,6 +54,12 @@ export default function AdminProducts() {
     loadSessionAndProducts();
   }, []);
 
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setImageFile(e.target.files[0]);
+    }
+  };
+
   const openAddModal = () => {
     if (userRole === "staff") {
       alert("Hanya Owner yang dapat menambahkan produk baru.");
@@ -62,6 +69,7 @@ export default function AdminProducts() {
     setName("");
     setDescription("");
     setImageUrl("");
+    setImageFile(null);
     setPrice(0);
     setStockQty(0);
     setCategory("Alat Tulis");
@@ -74,6 +82,7 @@ export default function AdminProducts() {
     setName(p.name);
     setDescription(p.description);
     setImageUrl(p.imageUrl || "");
+    setImageFile(null);
     setPrice(p.price);
     setStockQty(p.stockQty);
     setCategory(p.category);
@@ -85,23 +94,42 @@ export default function AdminProducts() {
     e.preventDefault();
     setSubmitting(true);
 
-    const isEdit = !!editingProduct;
-    const url = isEdit ? `/api/admin/products/${editingProduct.id}` : "/api/admin/products";
-    const method = isEdit ? "PUT" : "POST";
-
-    const payload = isEdit && userRole === "staff"
-      ? { stockQty: Number(stockQty) } // Staff can only update stock
-      : {
-          name,
-          description,
-          imageUrl,
-          price: Number(price),
-          stockQty: Number(stockQty),
-          category,
-          isActive,
-        };
+    let finalImageUrl = imageUrl;
 
     try {
+      // If there is a new image file, upload it first
+      if (imageFile) {
+        const formData = new FormData();
+        formData.append("file", imageFile);
+
+        const uploadRes = await fetch("/api/upload/product-image", {
+          method: "POST",
+          body: formData,
+        });
+
+        const uploadData = await uploadRes.json();
+        if (!uploadData.success) {
+          throw new Error(uploadData.error || "Gagal mengunggah foto produk");
+        }
+        finalImageUrl = uploadData.imageUrl;
+      }
+
+      const isEdit = !!editingProduct;
+      const url = isEdit ? `/api/admin/products/${editingProduct.id}` : "/api/admin/products";
+      const method = isEdit ? "PUT" : "POST";
+
+      const payload = isEdit && userRole === "staff"
+        ? { stockQty: Number(stockQty) } // Staff can only update stock
+        : {
+            name,
+            description,
+            imageUrl: finalImageUrl,
+            price: Number(price),
+            stockQty: Number(stockQty),
+            category,
+            isActive,
+          };
+
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
@@ -115,9 +143,9 @@ export default function AdminProducts() {
       } else {
         alert(data.error || "Gagal menyimpan produk");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Terjadi kesalahan jaringan");
+      alert(err.message || "Terjadi kesalahan jaringan");
     } finally {
       setSubmitting(false);
     }
@@ -289,16 +317,49 @@ export default function AdminProducts() {
 
               <div>
                 <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                  URL/Path Foto Produk
+                  Foto Produk
                 </label>
-                <input
-                  type="text"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  disabled={editingProduct !== null && userRole === "staff"}
-                  placeholder="/assets/katalog/nama-file.jpeg"
-                  className="w-full px-3 h-9 border border-slate-200 rounded focus:outline-none focus:border-red-500 font-medium bg-white disabled:bg-slate-100 disabled:text-slate-400"
-                />
+                
+                {/* Image Preview */}
+                {(imageFile || imageUrl) && (
+                  <div className="mb-2 relative w-20 h-20 rounded border border-slate-200 overflow-hidden bg-slate-50 flex items-center justify-center">
+                    <img
+                      src={imageFile ? URL.createObjectURL(imageFile) : imageUrl}
+                      alt="Preview"
+                      className="object-cover w-full h-full"
+                    />
+                    {imageFile && !(editingProduct !== null && userRole === "staff") && (
+                      <button
+                        type="button"
+                        onClick={() => setImageFile(null)}
+                        className="absolute top-0 right-0 bg-red-650 text-white w-4.5 h-4.5 text-[9px] font-bold rounded-bl flex items-center justify-center hover:bg-red-700 cursor-pointer"
+                        title="Hapus gambar terpilih"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* File Input */}
+                {!(editingProduct !== null && userRole === "staff") ? (
+                  <div className="flex items-center gap-2">
+                    <label className="flex items-center justify-center px-3.5 py-1.5 border border-slate-200 rounded text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 cursor-pointer transition-all shadow-sm">
+                      <span>Pilih Foto</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageFileChange}
+                        className="hidden"
+                      />
+                    </label>
+                    <span className="text-[10px] text-slate-400 truncate max-w-[200px]">
+                      {imageFile ? imageFile.name : "Format JPG/PNG, maks. 5MB"}
+                    </span>
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-400 font-medium">Hanya owner yang dapat mengubah foto</p>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { deletePrintDocumentsByOrder } from "@/lib/storage";
 
 export async function PATCH(
   request: Request,
@@ -58,6 +59,15 @@ export async function PATCH(
 
       return ord;
     });
+
+    // Clean up print documents from Supabase Storage if status is "selesai"
+    if (status === "selesai") {
+      try {
+        await deletePrintDocumentsByOrder(orderId);
+      } catch (e: any) {
+        console.error(`[storage] Gagal menghapus dokumen untuk order ${orderId}:`, e.message);
+      }
+    }
 
     return NextResponse.json({ success: true, status: updatedOrder.status });
   } catch (error: any) {
