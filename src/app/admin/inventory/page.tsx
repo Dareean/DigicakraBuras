@@ -29,6 +29,14 @@ export default function AdminInventory() {
   const [restockQty, setRestockQty] = useState(1);
   const [restockReason, setRestockReason] = useState("Restok rutin");
   const [submitting, setSubmitting] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+
+  const showToast = (message: string, type: "success" | "error" = "success") => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 4500);
+  };
 
   const loadInventory = () => {
     fetch("/api/admin/inventory")
@@ -71,14 +79,15 @@ export default function AdminInventory() {
 
       const data = await response.json();
       if (data.success) {
+        showToast("Stok berhasil diperbarui", "success");
         setShowModal(false);
         loadInventory();
       } else {
-        alert(data.error || "Gagal melakukan restok");
+        showToast(data.error || "Gagal melakukan restok", "error");
       }
     } catch (err) {
       console.error(err);
-      alert("Terjadi kesalahan jaringan");
+      showToast("Terjadi kesalahan jaringan", "error");
     } finally {
       setSubmitting(false);
     }
@@ -260,6 +269,27 @@ export default function AdminInventory() {
         </div>
       )}
 
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-5 right-5 z-[9999] flex items-center p-4 bg-slate-900/95 text-white rounded-lg shadow-2xl border-l-4 border-emerald-500 backdrop-blur-md max-w-sm transition-all duration-300">
+          <div className="mr-3 flex-shrink-0">
+            {toast.type === "success" ? (
+              <div className="bg-emerald-500/20 text-emerald-400 p-1.5 rounded-full">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            ) : (
+              <div className="bg-red-500/20 text-red-400 p-1.5 rounded-full">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </div>
+            )}
+          </div>
+          <div className="text-xs font-bold">{toast.message}</div>
+        </div>
+      )}
     </AdminLayout>
   );
 }

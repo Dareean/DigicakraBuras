@@ -31,12 +31,59 @@ export default function AdminTax() {
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState("bulanan"); // harian | mingguan | bulanan
   const [dateParam, setDateParam] = useState(""); // empty defaults to current date
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+
+  const showToast = (message: string, type: "success" | "error" = "success") => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 4500);
+  };
 
   // Edit rates state
   const [showSettings, setShowSettings] = useState(false);
   const [ppnRateInput, setPpnRateInput] = useState(11.0);
   const [pphRateInput, setPphRateInput] = useState(0.5);
   const [submittingSettings, setSubmittingSettings] = useState(false);
+
+  // Excel export state
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportExcel = async () => {
+    setExporting(true);
+    try {
+      const query = new URLSearchParams();
+      query.append("period", period);
+      if (dateParam) query.append("date", dateParam);
+
+      const res = await fetch(`/api/admin/reports/tax/export?${query.toString()}`);
+      if (!res.ok) {
+        const err = await res.json();
+        showToast(err.error || "Gagal membuat file Excel", "error");
+        return;
+      }
+
+      // Extract filename from Content-Disposition header
+      const disposition = res.headers.get("Content-Disposition") || "";
+      const match = disposition.match(/filename="([^"]+)"/);
+      const filename = match ? match[1] : `laporan_pajak.xlsx`;
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error(e);
+      showToast("Kesalahan jaringan saat mengunduh laporan", "error");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const loadTaxReport = () => {
     setLoading(true);
@@ -47,14 +94,34 @@ export default function AdminTax() {
     fetch(`/api/admin/reports/tax?${query.toString()}`)
       .then(async (res) => {
         if (res.status === 403) {
-          alert("Akses Ditolak: Hanya Owner yang dapat mengakses menu Pajak.");
-          window.location.href = "/admin";
+          showToast("Akses Ditolak: Hanya Owner yang dapat mengakses menu Pajak.", "error");
+          setTimeout(() => {
+            window.location.href = "/admin";
+          }, 1500);
           return;
         }
         const data = await res.json();
-        setReport(data);
-        setPpnRateInput(data.ppnRate);
-        setPphRateInput(data.pphRate);
+        if (!res.ok) {
+          console.error("Tax report API error:", data);
+          showToast(data.error || "Gagal memuat laporan pajak", "error");
+          setLoading(false);
+          return;
+        }
+        // Coerce Prisma Decimal → number (PostgreSQL/Supabase compatibility)
+        setReport({
+          ...data,
+          totalRevenue: Number(data.totalRevenue),
+          ppnRate:      Number(data.ppnRate),
+          ppnAmount:    Number(data.ppnAmount),
+          pphRate:      Number(data.pphRate),
+          pphAmount:    Number(data.pphAmount),
+          orders: (data.orders ?? []).map((o: any) => ({
+            ...o,
+            totalAmount: Number(o.totalAmount),
+          })),
+        });
+        setPpnRateInput(Number(data.ppnRate));
+        setPphRateInput(Number(data.pphRate));
         setLoading(false);
       })
       .catch((err) => {
@@ -88,15 +155,15 @@ export default function AdminTax() {
 
       const data = await res.json();
       if (data.success) {
-        alert("Tarif pajak berhasil diperbarui!");
+        showToast("Tarif pajak berhasil diperbarui!", "success");
         setShowSettings(false);
         loadTaxReport();
       } else {
-        alert(data.error || "Gagal memperbarui tarif pajak");
+        showToast(data.error || "Gagal memperbarui tarif pajak", "error");
       }
     } catch (e) {
       console.error(e);
-      alert("Kesalahan jaringan");
+      showToast("Kesalahan jaringan", "error");
     } finally {
       setSubmittingSettings(false);
     }
@@ -109,7 +176,7 @@ export default function AdminTax() {
         {/* Title & Configure button */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">Kalkulasi Pajak & Keuangan</h1>
+            <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">Kalkulasi Estimasi Pajak & Keuangan</h1>
             <p className="text-slate-500 text-xs mt-0.5">Alat bantu hitung & rekap otomatis PPN & PPh dari omzet transaksi toko.</p>
           </div>
           <div className="flex gap-2">
@@ -117,13 +184,23 @@ export default function AdminTax() {
               onClick={() => setShowSettings(!showSettings)}
               className="py-2.5 px-4 bg-white border border-slate-200 text-slate-700 rounded-md text-xs font-bold shadow-sm hover:bg-slate-50 transition-all flex items-center gap-1.5"
             >
-              ⚙️ Konfigurasi Tarif
+               Konfigurasi Tarif
             </button>
             <button
-              onClick={() => window.print()}
-              className="py-2.5 px-4 bg-slate-900 hover:bg-slate-850 text-white rounded-md text-xs font-bold shadow transition-all flex items-center gap-1.5"
+              onClick={handleExportExcel}
+              disabled={exporting || loading}
+              className="py-2.5 px-4 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-md text-xs font-bold shadow transition-all flex items-center gap-1.5"
             >
-              Export Laporan
+              {exporting ? (
+                <>
+                  <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Membuat Excel...
+                </>
+              ) : (
+                <>
+                   Export Excel (.xlsx)
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -276,7 +353,7 @@ export default function AdminTax() {
 
             {/* Disclaimer banner */}
             <div className="p-3.5 bg-slate-100 border border-slate-200 rounded text-[11px] text-slate-500 leading-relaxed italic">
-              📌 **Disclaimer:** Laporan perpajakan ini murni merupakan alat bantu hitung rekapitulasi keuangan internal untuk Fotocopy Cakrawala, dan tidak terafiliasi dengan sistem pelaporan pajak resmi Direktorat Jenderal Pajak (e-Faktur/DJP).
+               **Disclaimer:** Laporan perpajakan ini murni merupakan alat bantu hitung rekapitulasi keuangan internal untuk Fotocopy Cakrawala, dan tidak terafiliasi dengan sistem pelaporan pajak resmi Direktorat Jenderal Pajak (e-Faktur/DJP).
             </div>
 
             {/* Transactions table list included in this tax query */}
@@ -332,6 +409,28 @@ export default function AdminTax() {
         ) : null}
 
       </div>
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-5 right-5 z-[9999] flex items-center p-4 bg-slate-900/95 text-white rounded-lg shadow-2xl border-l-4 border-emerald-500 backdrop-blur-md max-w-sm transition-all duration-300">
+          <div className="mr-3 flex-shrink-0">
+            {toast.type === "success" ? (
+              <div className="bg-emerald-500/20 text-emerald-400 p-1.5 rounded-full">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            ) : (
+              <div className="bg-red-500/20 text-red-400 p-1.5 rounded-full">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </div>
+            )}
+          </div>
+          <div className="text-xs font-bold">{toast.message}</div>
+        </div>
+      )}
     </AdminLayout>
   );
 }

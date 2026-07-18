@@ -161,27 +161,27 @@ const renderMockPageContent = (pageNum: number) => {
 const getAtkVisualDetails = (name: string) => {
   const lowercase = name.toLowerCase();
   if (lowercase.includes("pensil") || lowercase.includes("pencil")) {
-    return { icon: "✏️", bg: "bg-amber-50 border-amber-200 text-amber-600" };
+    return { icon: "", bg: "bg-amber-50 border-amber-200 text-amber-600" };
   }
   if (lowercase.includes("pulpen") || lowercase.includes("pen")) {
-    return { icon: "🖊️", bg: "bg-blue-50 border-blue-200 text-blue-600" };
+    return { icon: "", bg: "bg-blue-50 border-blue-200 text-blue-600" };
   }
   if (lowercase.includes("buku") || lowercase.includes("notebook") || lowercase.includes("binder")) {
-    return { icon: "📘", bg: "bg-emerald-50 border-emerald-200 text-emerald-600" };
+    return { icon: "", bg: "bg-emerald-50 border-emerald-200 text-emerald-600" };
   }
   if (lowercase.includes("kertas") || lowercase.includes("hvs")) {
-    return { icon: "📄", bg: "bg-slate-50 border-slate-200 text-slate-600" };
+    return { icon: "", bg: "bg-slate-50 border-slate-200 text-slate-600" };
   }
   if (lowercase.includes("penggaris") || lowercase.includes("ruler")) {
-    return { icon: "📐", bg: "bg-indigo-50 border-indigo-200 text-indigo-600" };
+    return { icon: "", bg: "bg-indigo-50 border-indigo-200 text-indigo-600" };
   }
   if (lowercase.includes("penghapus") || lowercase.includes("eraser")) {
-    return { icon: "🧼", bg: "bg-pink-50 border-pink-200 text-pink-600" };
+    return { icon: "", bg: "bg-pink-50 border-pink-200 text-pink-600" };
   }
   if (lowercase.includes("map") || lowercase.includes("folder")) {
-    return { icon: "📁", bg: "bg-yellow-50 border-yellow-200 text-yellow-600" };
+    return { icon: "", bg: "bg-yellow-50 border-yellow-200 text-yellow-600" };
   }
-  return { icon: "📦", bg: "bg-red-50 border-red-200 text-red-600" };
+  return { icon: "", bg: "bg-red-50 border-red-200 text-red-600" };
 };
 
 export default function OrderConfig() {
@@ -220,6 +220,14 @@ export default function OrderConfig() {
 
   const [loading, setLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("Memproses Pesanan...");
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+
+  const showToast = (message: string, type: "success" | "error" = "success") => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 4500);
+  };
 
   useEffect(() => {
     // Load ATK items if any
@@ -301,7 +309,7 @@ export default function OrderConfig() {
       } else {
         const next = [...prev, id];
         if (next.length === virtualPages.length) {
-          alert("Anda harus mencetak minimal 1 halaman!");
+          showToast("Anda harus mencetak minimal 1 halaman!", "error");
           return prev;
         }
         return next;
@@ -395,12 +403,12 @@ export default function OrderConfig() {
     e.preventDefault();
 
     if (!fullName.trim()) {
-      alert("Nama Lengkap wajib diisi!");
+      showToast("Nama Lengkap wajib diisi!", "error");
       return;
     }
 
     if (!whatsapp.trim() || whatsapp.length < 9) {
-      alert("Nomor WhatsApp tidak valid!");
+      showToast("Nomor WhatsApp tidak valid!", "error");
       return;
     }
 
@@ -408,7 +416,7 @@ export default function OrderConfig() {
     const hasAtk = atkItems.length > 0;
 
     if (!hasFile && !hasAtk) {
-      alert("Pilih berkas untuk dicetak atau belanja ATK terlebih dahulu!");
+      showToast("Pilih berkas untuk dicetak atau belanja ATK terlebih dahulu!", "error");
       return;
     }
 
@@ -505,11 +513,11 @@ export default function OrderConfig() {
         // Redirect to checkout payment
         window.location.href = `/checkout/${data.orderCode}`;
       } else {
-        alert(data.error || "Gagal memproses pesanan");
+        showToast(data.error || "Gagal memproses pesanan", "error");
       }
     } catch (err: any) {
       console.error(err);
-      alert(err.message || "Terjadi kesalahan koneksi");
+      showToast(err.message || "Terjadi kesalahan koneksi", "error");
     } finally {
       setLoading(false);
     }
@@ -895,9 +903,6 @@ export default function OrderConfig() {
                       
                       {/* Left: Icon & Product Info */}
                       <div className="flex items-center gap-3 w-full sm:w-auto">
-                        <div className={`w-11 h-11 rounded-md border flex items-center justify-center text-lg flex-shrink-0 ${visual.bg}`}>
-                          {visual.icon}
-                        </div>
                         <div className="text-left min-w-0 flex-1">
                           <span className="font-bold text-slate-800 text-xs block truncate" title={item.name}>{item.name}</span>
                           <p className="text-[10px] text-slate-400 font-medium">Rp {item.unitPrice.toLocaleString("id-ID")}</p>
@@ -1083,7 +1088,7 @@ export default function OrderConfig() {
                   }}
                   className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded transition-all"
                 >
-                  🔄 Putar 90°
+                   Putar 90°
                 </button>
                 <button
                   type="button"
@@ -1097,6 +1102,28 @@ export default function OrderConfig() {
           </div>
         )}
       </main>
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-5 right-5 z-[9999] flex items-center p-4 bg-slate-900/95 text-white rounded-lg shadow-2xl border-l-4 border-emerald-500 backdrop-blur-md max-w-sm transition-all duration-300">
+          <div className="mr-3 flex-shrink-0">
+            {toast.type === "success" ? (
+              <div className="bg-emerald-500/20 text-emerald-400 p-1.5 rounded-full">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            ) : (
+              <div className="bg-red-500/20 text-red-400 p-1.5 rounded-full">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </div>
+            )}
+          </div>
+          <div className="text-xs font-bold">{toast.message}</div>
+        </div>
+      )}
     </div>
   );
 }

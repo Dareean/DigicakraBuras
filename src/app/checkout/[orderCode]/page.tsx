@@ -294,7 +294,7 @@ export default function CheckoutPayment() {
         <div className="checkout-anim-col opacity-0 space-y-6">
 
           {/* Ringkasan item pesanan */}
-          <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm space-y-4">
+          <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm space-y-4 wrap-break-word">
             <div className="flex justify-between items-center border-b border-slate-100 pb-3">
               <span className="text-xs font-bold text-slate-400 uppercase">
                 Ringkasan Pesanan
@@ -310,7 +310,7 @@ export default function CheckoutPayment() {
                   key={idx}
                   className="flex justify-between text-xs pb-3 border-b border-slate-50 last:border-b-0 last:pb-0"
                 >
-                  <div className="space-y-1">
+                  <div className="space-y-1 w-full ">
                     <span className="font-bold text-slate-800">
                       {item.itemType === "atk"
                         ? item.productName ?? "ATK Item"
@@ -334,12 +334,6 @@ export default function CheckoutPayment() {
                         ))}
                       </div>
                     )}
-                  </div>
-                  <div className="text-right">
-                    <span className="font-extrabold text-slate-800 block">
-                      Rp {item.subtotal.toLocaleString("id-ID")}
-                    </span>
-                    <span className="text-slate-400">x{item.qty}</span>
                   </div>
                 </div>
               ))}

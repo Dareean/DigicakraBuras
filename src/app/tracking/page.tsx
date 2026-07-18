@@ -230,7 +230,7 @@ function TrackingContent() {
 
                     {customer.totalStamps >= 10 && (
                       <div className="p-3 bg-emerald-50 border border-emerald-100 rounded text-[11px] text-emerald-800 font-bold leading-normal">
-                        🎉 Selamat! Anda telah mencapai target stempel dan berhak atas promo reward di toko!
+                         Selamat! Anda telah mencapai target stempel dan berhak atas promo reward di toko!
                       </div>
                     )}
                   </div>
@@ -345,7 +345,7 @@ function TrackingContent() {
 
                             {order.pickupNote && (
                               <div className="mt-4 pt-4 border-t border-slate-100 text-xs text-slate-500">
-                                <span className="font-semibold text-slate-700">Catatan pengantaran/pickup:</span>
+                                <span className="font-semibold text-slate-700">Catatan :</span>
                                 <p className="italic mt-1">"{order.pickupNote}"</p>
                               </div>
                             )}

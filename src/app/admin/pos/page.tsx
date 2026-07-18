@@ -47,6 +47,15 @@ export default function AdminPos() {
   const [qrCodeString, setQrCodeString] = useState<string | null>(null);
   const [activeOrderCode, setActiveOrderCode] = useState<string | null>(null);
   const [verifyingQr, setVerifyingQr] = useState(false);
+  const [confirmingPayment, setConfirmingPayment] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+
+  const showToast = (message: string, type: "success" | "error" = "success") => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 4500);
+  };
 
   useEffect(() => {
     fetch("/api/products")
@@ -75,7 +84,7 @@ export default function AdminPos() {
       const existing = prev.find((item) => item.productId === p.id && item.itemType === "atk");
       if (existing) {
         if (existing.qty >= p.stockQty) {
-          alert("Stok barang tidak mencukupi!");
+          showToast("Stok barang tidak mencukupi!", "error");
           return prev;
         }
         return prev.map((item) =>
@@ -142,7 +151,7 @@ export default function AdminPos() {
       if (item.itemType === "atk" && item.productId) {
         const prod = products.find((p) => p.id === item.productId);
         if (prod && nextQty > prod.stockQty) {
-          alert("Stok barang tidak mencukupi!");
+          showToast("Stok barang tidak mencukupi!", "error");
           return prev;
         }
       }
@@ -163,7 +172,7 @@ export default function AdminPos() {
   // Submit POS checkout
   const handleCheckout = async () => {
     if (posCart.length === 0) {
-      alert("Keranjang masih kosong!");
+      showToast("Keranjang masih kosong!", "error");
       return;
     }
 
@@ -208,35 +217,39 @@ export default function AdminPos() {
 
       if (data.success) {
         if (paymentMethod === "qris") {
-          // Open QRIS Modal
-          setActiveOrderCode(data.orderCode);
-          fetchQrDetails(data.orderId);
+          showToast(`Transaksi QRIS Sukses! Kode: ${data.orderCode} (Validasi Manual - Total: Rp ${data.totalAmount.toLocaleString("id-ID")})`, "success");
+          resetPOS();
         } else {
           // Cash success: Clear cart and show notification
-          alert(`Transaksi Tunai Sukses!\nKode: ${data.orderCode}\nTotal: Rp ${data.totalAmount.toLocaleString("id-ID")}`);
+          showToast(`Transaksi Tunai Sukses! Kode: ${data.orderCode} (Total: Rp ${data.totalAmount.toLocaleString("id-ID")})`, "success");
           resetPOS();
         }
       } else {
-        alert(data.error || "Gagal memproses transaksi kasir");
+        showToast(data.error || "Gagal memproses transaksi kasir", "error");
       }
     } catch (err) {
       console.error(err);
-      alert("Terjadi kesalahan jaringan");
+      showToast("Terjadi kesalahan jaringan", "error");
     } finally {
       setCheckoutLoading(false);
     }
   };
 
-  const fetchQrDetails = (orderId: number) => {
-    fetch(`/api/payments/${orderId}/generate-qr`, { method: "POST" })
-      .then((res) => res.json())
-      .then((qrData) => {
-        if (qrData.qrString) {
-          setQrCodeString(qrData.qrString);
-          setShowQrModal(true);
-        }
-      })
-      .catch((err) => console.error(err));
+  const fetchQrDetails = async (orderId: number) => {
+    try {
+      const res = await fetch(`/api/payments/${orderId}/generate-qr`, { method: "POST" });
+      const qrData = await res.json();
+      const qr = qrData.qrCodeUrl || qrData.qrString;
+      if (qr) {
+        setQrCodeString(qr);
+        setShowQrModal(true);
+      } else {
+        showToast(qrData.error || "Gagal mendapatkan QRIS dari Midtrans", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("Gagal memuat QRIS", "error");
+    }
   };
 
   const verifyQrisPayment = async () => {
@@ -255,15 +268,15 @@ export default function AdminPos() {
 
       const data = await response.json();
       if (data.success) {
-        alert("Pembayaran QRIS Sukses Diverifikasi!");
+        showToast(`Pembayaran QRIS Sukses untuk ${activeOrderCode}!`, "success");
         setShowQrModal(false);
         resetPOS();
       } else {
-        alert("Menunggu pembayaran dari pelanggan...");
+        showToast("Menunggu pembayaran dari pelanggan...", "error");
       }
     } catch (err) {
       console.error(err);
-      alert("Gagal melakukan pengecekan");
+      showToast("Gagal melakukan pengecekan status pembayaran", "error");
     } finally {
       setVerifyingQr(false);
     }
@@ -276,7 +289,7 @@ export default function AdminPos() {
 
   const fetchOnlineOrder = async () => {
     if (!onlineOrderCode.trim()) {
-      alert("Masukkan kode pesanan terlebih dahulu!");
+      showToast("Masukkan kode pesanan terlebih dahulu!", "error");
       return;
     }
     setFetchingOrder(true);
@@ -287,11 +300,11 @@ export default function AdminPos() {
       if (response.ok && data.id) {
         setFetchedOrder(data);
       } else {
-        alert(data.error || "Pesanan tidak ditemukan");
+        showToast(data.error || "Pesanan tidak ditemukan", "error");
       }
     } catch (err) {
       console.error(err);
-      alert("Gagal menghubungi server");
+      showToast("Gagal menghubungi server", "error");
     } finally {
       setFetchingOrder(false);
     }
@@ -299,30 +312,28 @@ export default function AdminPos() {
 
   const confirmOnlineOrderPayment = async (orderId: number, method: "cash" | "qris") => {
     if (!fetchedOrder) return;
+    setConfirmingPayment(true);
     
-    if (method === "cash") {
-      try {
-        const response = await fetch(`/api/admin/orders/${orderId}/status`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: "selesai" }),
-        });
-        const data = await response.json();
-        if (data.success) {
-          alert(`Pembayaran Tunai Sukses untuk ${fetchedOrder.orderCode}!\nStatus pesanan ditandai sebagai SELESAI.`);
-          setFetchedOrder(null);
-          setOnlineOrderCode("");
-        } else {
-          alert(data.error || "Gagal memperbarui status pesanan");
-        }
-      } catch (err) {
-        console.error(err);
-        alert("Kesalahan koneksi");
+    try {
+      const response = await fetch(`/api/admin/orders/${orderId}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "selesai" }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        const methodLabel = method === "cash" ? "Tunai" : "QRIS Statis";
+        showToast(`Pembayaran ${methodLabel} Sukses untuk ${fetchedOrder.orderCode}! Status pesanan ditandai sebagai SELESAI.`, "success");
+        setFetchedOrder(null);
+        setOnlineOrderCode("");
+      } else {
+        showToast(data.error || "Gagal memperbarui status pesanan", "error");
       }
-    } else {
-      // QRIS
-      setActiveOrderCode(fetchedOrder.orderCode);
-      fetchQrDetails(fetchedOrder.id);
+    } catch (err) {
+      console.error(err);
+      showToast("Kesalahan koneksi internet", "error");
+    } finally {
+      setConfirmingPayment(false);
     }
   };
 
@@ -350,7 +361,6 @@ export default function AdminPos() {
         {/* Tarik Antrean Cetak Online Bar */}
         <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 flex flex-col sm:flex-row justify-between items-center gap-4 text-left">
           <div className="flex items-center space-x-3 text-left w-full sm:w-auto">
-            <span className="text-xl">⚡</span>
             <div>
               <h3 className="text-sm font-bold text-slate-800">Tarik Antrean Cetak Online</h3>
               <p className="text-[10px] text-slate-400">Masukkan kode pesanan online pelanggan untuk pemrosesan instan.</p>
@@ -384,7 +394,7 @@ export default function AdminPos() {
             {/* Custom Print Job Form */}
             <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm space-y-4">
               <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Layanan Jasa Print / Fotokopi</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-8">
                 <div>
                   <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1.5">Hal</label>
                   <input
@@ -401,10 +411,10 @@ export default function AdminPos() {
                   <select
                     value={printColor}
                     onChange={(e) => setPrintColor(e.target.value as any)}
-                    className="w-full px-3 h-9 border border-slate-200 rounded text-xs focus:outline-none focus:border-red-500 font-medium bg-white"
+                    className="w-35  px-0.5 h-9 border border-slate-200 rounded text-xs focus:outline-none focus:border-red-500 font-medium bg-white"
                   >
-                    <option value="bw">Hitam Putih (Rp500)</option>
-                    <option value="color">Warna (Rp1500)</option>
+                    <option value="bw">Hitam Putih (Rp500) </option>
+                    <option value="color">Warna (Rp1500) </option>
                   </select>
                 </div>
 
@@ -513,10 +523,16 @@ export default function AdminPos() {
             
             {/* Online Order Summary Overlay */}
             {fetchedOrder && (
-              <div className="bg-slate-900 text-white rounded-lg p-5 shadow-lg border border-slate-800 space-y-4 text-xs text-left">
+              <div className="bg-slate-900 text-white rounded-lg p-5 shadow-lg border border-slate-800 space-y-4 text-xs text-left relative overflow-hidden">
+                {confirmingPayment && (
+                  <div className="absolute inset-0 bg-slate-950/85 flex flex-col items-center justify-center space-y-3 z-50">
+                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-red-500 border-t-transparent"></div>
+                    <p className="text-[10px] font-bold text-slate-300">Memproses Transaksi...</p>
+                  </div>
+                )}
                 <div className="flex justify-between items-center border-b border-slate-800 pb-2">
                   <span className="text-[10px] font-black tracking-widest text-red-500 uppercase">PESANAN ONLINE DITEMUKAN</span>
-                  <button onClick={() => setFetchedOrder(null)} className="text-slate-400 hover:text-white font-bold text-sm">✕</button>
+                  <button onClick={() => setFetchedOrder(null)} disabled={confirmingPayment} className="text-slate-400 hover:text-white font-bold text-sm">✕</button>
                 </div>
                 
                 <div>
@@ -546,14 +562,14 @@ export default function AdminPos() {
                     onClick={() => confirmOnlineOrderPayment(fetchedOrder.id, "cash")}
                     className="py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[11px] font-extrabold transition-all text-center flex items-center justify-center gap-1"
                   >
-                    💵 Bayar Tunai
+                    Bayar Tunai
                   </button>
                   <button
                     type="button"
                     onClick={() => confirmOnlineOrderPayment(fetchedOrder.id, "qris")}
                     className="py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[11px] font-extrabold transition-all text-center flex items-center justify-center gap-1"
                   >
-                    📱 Bayar QRIS Pas
+                    Bayar QRIS Pas
                   </button>
                 </div>
               </div>
@@ -616,7 +632,7 @@ export default function AdminPos() {
             <div className="border-t border-slate-100 pt-4 space-y-3 text-xs">
               <div>
                 <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                  Nomor WhatsApp Pelanggan (Loyalitas)
+                  Nomor WhatsApp Pelanggan
                 </label>
                 <input
                   type="text"
@@ -665,7 +681,7 @@ export default function AdminPos() {
                       : "bg-white border-slate-200 text-slate-600 hover:border-slate-350"
                   }`}
                 >
-                  QRIS Dinamis
+                  QRIS Statis Toko
                 </button>
               </div>
             </div>
@@ -691,7 +707,7 @@ export default function AdminPos() {
                     Memproses...
                   </>
                 ) : (
-                  paymentMethod === "cash" ? "Proses & Cetak Nota Tunai" : "Generate QRIS Kasir"
+                  paymentMethod === "cash" ? "Proses & Cetak Nota Tunai" : "Proses & Cetak Nota QRIS"
                 )}
               </button>
             </div>
@@ -774,6 +790,28 @@ export default function AdminPos() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-5 right-5 z-[9999] flex items-center p-4 bg-slate-900/95 text-white rounded-lg shadow-2xl border-l-4 border-emerald-500 backdrop-blur-md max-w-sm transition-all duration-300">
+          <div className="mr-3 flex-shrink-0">
+            {toast.type === "success" ? (
+              <div className="bg-emerald-500/20 text-emerald-400 p-1.5 rounded-full">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            ) : (
+              <div className="bg-red-500/20 text-red-400 p-1.5 rounded-full">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </div>
+            )}
+          </div>
+          <div className="text-xs font-bold">{toast.message}</div>
         </div>
       )}
 

@@ -85,7 +85,7 @@ export async function GET(
     }
 
     // 4. Query status transaksi ke Midtrans
-    const midtransStatus = (await coreApi.transaction.status(
+    const midtransStatus = (await (coreApi as any).transaction.status(
       payment.paymentGatewayRef
     )) as MidtransStatusResponse;
 

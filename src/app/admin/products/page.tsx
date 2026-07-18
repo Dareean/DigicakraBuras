@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import AdminLayout from "@/components/AdminLayout";
+import { SquarePen, Trash2 } from "lucide-react";
 
 interface Product {
   id: number;
@@ -31,6 +32,14 @@ export default function AdminProducts() {
   const [category, setCategory] = useState("Alat Tulis");
   const [isActive, setIsActive] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+
+  const showToast = (message: string, type: "success" | "error" = "success") => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 4500);
+  };
 
   const loadSessionAndProducts = async () => {
     try {
@@ -62,7 +71,7 @@ export default function AdminProducts() {
 
   const openAddModal = () => {
     if (userRole === "staff") {
-      alert("Hanya Owner yang dapat menambahkan produk baru.");
+      showToast("Hanya Owner yang dapat menambahkan produk baru.", "error");
       return;
     }
     setEditingProduct(null);
@@ -138,14 +147,15 @@ export default function AdminProducts() {
 
       const data = await response.json();
       if (data.success) {
+        showToast("Produk berhasil disimpan!", "success");
         setShowModal(false);
         loadSessionAndProducts();
       } else {
-        alert(data.error || "Gagal menyimpan produk");
+        showToast(data.error || "Gagal menyimpan produk", "error");
       }
     } catch (err: any) {
       console.error(err);
-      alert(err.message || "Terjadi kesalahan jaringan");
+      showToast(err.message || "Terjadi kesalahan jaringan", "error");
     } finally {
       setSubmitting(false);
     }
@@ -153,7 +163,7 @@ export default function AdminProducts() {
 
   const handleDeactivate = async (id: number) => {
     if (userRole !== "owner") {
-      alert("Hanya Owner yang dapat menonaktifkan produk.");
+      showToast("Hanya Owner yang dapat menonaktifkan produk.", "error");
       return;
     }
 
@@ -164,13 +174,14 @@ export default function AdminProducts() {
         });
         const data = await response.json();
         if (data.success) {
+          showToast("Produk berhasil dinonaktifkan", "success");
           loadSessionAndProducts();
         } else {
-          alert(data.error || "Gagal menghapus produk");
+          showToast(data.error || "Gagal menghapus produk", "error");
         }
       } catch (e) {
         console.error(e);
-        alert("Kesalahan jaringan");
+        showToast("Kesalahan jaringan", "error");
       }
     }
   };
@@ -253,14 +264,14 @@ export default function AdminProducts() {
                           onClick={() => openEditModal(p)}
                           className="text-xs text-blue-600 hover:text-blue-800 hover:underline font-bold"
                         >
-                          Ubah
+                          <SquarePen size={18} />
                         </button>
                         {userRole === "owner" && p.isActive && (
                           <button
                             onClick={() => handleDeactivate(p.id)}
                             className="text-xs text-red-600 hover:text-red-800 hover:underline font-bold"
                           >
-                            Hapus
+                            <Trash2 size={18} />
                           </button>
                         )}
                       </td>
@@ -454,6 +465,27 @@ export default function AdminProducts() {
         </div>
       )}
 
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-5 right-5 z-[9999] flex items-center p-4 bg-slate-900/95 text-white rounded-lg shadow-2xl border-l-4 border-emerald-500 backdrop-blur-md max-w-sm transition-all duration-300">
+          <div className="mr-3 flex-shrink-0">
+            {toast.type === "success" ? (
+              <div className="bg-emerald-500/20 text-emerald-400 p-1.5 rounded-full">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            ) : (
+              <div className="bg-red-500/20 text-red-400 p-1.5 rounded-full">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </div>
+            )}
+          </div>
+          <div className="text-xs font-bold">{toast.message}</div>
+        </div>
+      )}
     </AdminLayout>
   );
 }
