@@ -12,8 +12,8 @@ export default function Navbar() {
 
   const navLinks = [
     { name: "Layanan", href: "/#layanan", section: "layanan" },
-    { name: "Promo", href: "/#promo", section: "promo" },
     { name: "Cara Kerja", href: "/#cara-kerja", section: "cara-kerja" },
+    { name: "Promo", href: "/#promo", section: "promo" },
     { name: "Tracking Pesanan", href: "/tracking", section: "tracking" },
   ];
 

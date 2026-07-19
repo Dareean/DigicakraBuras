@@ -65,8 +65,12 @@ export async function POST(request: Request) {
     // Online orders: "menunggu_pembayaran"
     // POS orders: if paymentMethod is cash/manual and confirmed, we set to "diterima" or "selesai". Otherwise if QRIS "menunggu_pembayaran"
     let initialStatus = "menunggu_pembayaran";
-    if (orderSource === "pos" && (paymentMethod === "cash" || paymentMethod === "manual")) {
-      initialStatus = "diterima"; // POS Cash is marked as paid instantly
+    if (orderSource === "pos" && (paymentMethod === "cash" || paymentMethod === "manual" || paymentMethod === "qris")) {
+      if (orderType === "atk") {
+        initialStatus = "selesai"; // POS ATK only is marked completed instantly
+      } else {
+        initialStatus = "diterima"; // POS Print / Mixed goes to accepted state for printing
+      }
     }
 
     // 4. Create the Order inside a transaction
@@ -109,13 +113,13 @@ export async function POST(request: Request) {
           orderId: order.id,
           paymentMethod: paymentMethod || "qris",
           amount: totalAmount,
-          status: initialStatus === "diterima" ? "success" : "pending",
-          paidAt: initialStatus === "diterima" ? new Date() : null,
+          status: (initialStatus === "diterima" || initialStatus === "selesai") ? "success" : "pending",
+          paidAt: (initialStatus === "diterima" || initialStatus === "selesai") ? new Date() : null,
         },
       });
 
-      // If POS cash order (marked paid instantly), deduct inventory and add stamp!
-      if (initialStatus === "diterima") {
+      // If POS order (marked paid instantly), deduct inventory and add stamp!
+      if (initialStatus === "diterima" || initialStatus === "selesai") {
         // Stock Deduction & Loyalty Stamp logic
         await deductInventoryAndLoyalty(tx, order.id, customerId);
       }

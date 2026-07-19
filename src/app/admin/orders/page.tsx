@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import AdminLayout from "@/components/AdminLayout";
-import { Download } from "lucide-react";
+import { Download, MessageCircle } from "lucide-react";
 
 interface Order {
   id: number;
@@ -43,6 +43,14 @@ export default function AdminOrders() {
   const [sourceFilter, setSourceFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [selectedReceiptImage, setSelectedReceiptImage] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+
+  const showToast = (message: string, type: "success" | "error" = "success") => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 4500);
+  };
 
   const loadOrders = () => {
     setLoading(true);
@@ -82,24 +90,25 @@ export default function AdminOrders() {
       const data = await response.json();
       
       if (data.success) {
-        // If status changed to siap_diambil, automatically open WA API chat
-        if (newStatus === "siap_diambil" && orderObj) {
+        // If status changed to siap_diambil, automatically open WA API chat (only for online orders)
+        if (newStatus === "siap_diambil" && orderObj && orderObj.orderSource !== "pos") {
           sendWaNotification(orderObj);
         }
+        showToast("Status pesanan berhasil diperbarui", "success");
         // Refresh orders list
         loadOrders();
       } else {
-        alert(data.error || "Gagal memperbarui status");
+        showToast(data.error || "Gagal memperbarui status", "error");
       }
     } catch (e) {
       console.error(e);
-      alert("Kesalahan koneksi");
+      showToast("Kesalahan koneksi", "error");
     }
   };
 
   const handleOpenDocument = async (path: string, orderStatus: string) => {
     if (orderStatus === "selesai") {
-      alert("Pesanan ini sudah selesai. Berkas dokumen telah dihapus");
+      showToast("Pesanan ini sudah selesai. Berkas dokumen telah dihapus", "error");
       return;
     }
 
@@ -111,22 +120,22 @@ export default function AdminOrders() {
           if (item.signedUrl) {
             window.open(item.signedUrl, "_blank");
           } else {
-            alert(`Gagal membuka file: ${item.error || "Unknown error"}`);
+            showToast(`Gagal membuka file: ${item.error || "Unknown error"}`, "error");
           }
         });
       } else {
-        alert(data.error || "Gagal mendapatkan tautan berkas");
+        showToast(data.error || "Gagal mendapatkan tautan berkas", "error");
       }
     } catch (e) {
       console.error(e);
-      alert("Kesalahan koneksi saat mengambil berkas");
+      showToast("Kesalahan koneksi saat mengambil berkas", "error");
     }
   };
 
   const sendWaNotification = (order: Order) => {
     const waNum = order.customer?.whatsappNumber;
     if (!waNum) {
-      alert("Pelanggan tidak memiliki nomor WhatsApp!");
+      showToast("Pelanggan tidak memiliki nomor WhatsApp!", "error");
       return;
     }
     
@@ -452,7 +461,7 @@ export default function AdminOrders() {
                       onClick={() => sendWaNotification(order)}
                       className="w-full py-1.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[11px] font-bold transition-all text-center flex items-center justify-center gap-1.5 shadow-sm mt-1"
                     >
-                      💬 Kirim Notif WA
+                      <MessageCircle size={14} /> Kirim Notif WA
                     </button>
                   )}
                   
@@ -505,6 +514,28 @@ export default function AdminOrders() {
               Tutup
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-5 right-5 z-[9999] flex items-center p-4 bg-slate-900/95 text-white rounded-lg shadow-2xl border-l-4 border-emerald-500 backdrop-blur-md max-w-sm transition-all duration-300">
+          <div className="mr-3 flex-shrink-0">
+            {toast.type === "success" ? (
+              <div className="bg-emerald-500/20 text-emerald-400 p-1.5 rounded-full">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            ) : (
+              <div className="bg-red-500/20 text-red-400 p-1.5 rounded-full">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </div>
+            )}
+          </div>
+          <div className="text-xs font-bold">{toast.message}</div>
         </div>
       )}
     </AdminLayout>

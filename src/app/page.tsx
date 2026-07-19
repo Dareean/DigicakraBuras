@@ -23,6 +23,14 @@ export default function Home() {
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("Semua");
   const [cart, setCart] = useState<{ [key: number]: number }>({});
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+
+  const showToast = (message: string, type: "success" | "error" = "success") => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 4500);
+  };
 
   // Hero & Steps animations on mount
   useEffect(() => {
@@ -95,7 +103,7 @@ export default function Home() {
       }
       
       if (next > product.stockQty) {
-        alert(`Stok tidak mencukupi. Maksimal stok tersedia: ${product.stockQty}`);
+        showToast(`Stok tidak mencukupi. Maksimal stok tersedia: ${product.stockQty}`, "error");
         return prev;
       }
 
@@ -138,9 +146,20 @@ export default function Home() {
       <Navbar />
 
       {/* Hero Section */}
-      <section id="layanan" className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-red-950 text-white py-20 px-4 sm:px-6 lg:px-8">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(239,68,68,0.15),transparent_50%)]"></div>
-        <div className="max-w-4xl mx-auto text-center relative z-10">
+      <section
+        id="layanan"
+        className="relative overflow-hidden text-white py-24 bg-cover bg-center"
+        style={{
+          backgroundImage: `
+            linear-gradient(
+              rgba(0,0,0,0.6),
+              rgba(0,0,0,0.6)
+            ),
+            url('/assets/img/image (2).webp')
+          `,
+        }}
+      >
+        <div className="max-w-4xl mx-auto text-center relative z-10 pb-8">
           <span className="hero-anim-item opacity-0 inline-flex items-center rounded-full bg-red-500/10 px-3 py-1 text-sm font-medium text-red-400 ring-1 ring-inset ring-red-500/20 mb-4 animate-pulse">
             Inovasi Digital Pembayaran BRIDA 2026
           </span>
@@ -165,6 +184,8 @@ export default function Home() {
             </a>
           </div>
         </div>
+        {/* Gradasi memudar menyatu dengan background halaman (slate-50) */}
+        <div className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-slate-50 to-transparent pointer-events-none"></div>
       </section>
 
       {/* Cara Kerja Section */}
@@ -265,10 +286,40 @@ export default function Home() {
         </div>
 
         {/* Catalog Grid */}
-        {loading ? (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-red-600 border-t-transparent mb-2"></div>
-            <p className="text-slate-500">Memuat produk...</p>
+        {loading ? ( 
+          <div className="flex sm:flex-col md:flex-row gap-6">
+            {Array.from({ length: 4 }).map((_, idx) => (
+              <div
+                key={idx}
+                className="bg-white rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between overflow-hidden animate-pulse w-full h-full"
+              >
+                <div>
+                  {/* Image Placeholder */}
+                  <div className="aspect-video w-full bg-slate-200"></div>
+                  {/* Content Placeholder */}
+                  <div className="p-6 space-y-4">
+                    {/* Category */}
+                    <div className="h-3 bg-slate-200 rounded w-1/4"></div>
+                    {/* Title */}
+                    <div className="h-5 bg-slate-200 rounded w-3/4"></div>
+                    {/* Description */}
+                    <div className="space-y-2">
+                      <div className="h-3 bg-slate-200 rounded w-full"></div>
+                      <div className="h-3 bg-slate-200 rounded w-5/6"></div>
+                    </div>
+                    {/* Price & Stock */}
+                    <div className="flex justify-between items-center pt-2">
+                      <div className="h-5 bg-slate-200 rounded w-1/3"></div>
+                      <div className="h-3 bg-slate-200 rounded w-1/6"></div>
+                    </div>
+                  </div>
+                </div>
+                {/* Button Placeholder */}
+                <div className="px-6 pb-6 pt-0 border-t border-slate-100 bg-slate-50/50 flex items-center justify-center h-16">
+                  <div className="h-9 bg-slate-200 rounded-md w-full"></div>
+                </div>
+              </div>
+            ))}
           </div>
         ) : filteredProducts.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-lg border border-slate-200">
@@ -397,7 +448,7 @@ export default function Home() {
             </p>
           </div>
           <div>
-            <h3 className="text-white text-sm font-semibold mb-4">Link Cepat</h3>
+            <h3 className="text-white text-sm font-semibold mb-4">Navigasi</h3>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link href="/order" className="hover:text-white transition-colors">Cetak Dokumen</Link>
@@ -408,15 +459,12 @@ export default function Home() {
               <li>
                 <Link href="/tracking" className="hover:text-white transition-colors">Lacak Pesanan</Link>
               </li>
-              <li>
-                <Link href="/admin/login" className="hover:text-white transition-colors">Dashboard Admin (Kasir)</Link>
-              </li>
             </ul>
           </div>
           <div>
             <h3 className="text-white text-sm font-semibold mb-4">Lokasi & Kontak</h3>
             <ul className="space-y-2 text-sm">
-              <li>Kota Palu, Sulawesi Tengah</li>
+              <li>Jalan Banawa No.57, Kota Donggala, Sulawesi Tengah</li>
               <li>WhatsApp: +62 812-3456-7890</li>
               <li>Email: info@cakrawala.id</li>
             </ul>
@@ -426,6 +474,28 @@ export default function Home() {
           <p>&copy; {new Date().getFullYear()} DIGICAKRA — Fotocopy Cakrawala. Universitas Tadulako, BRIDA Sulteng 2026.</p>
         </div>
       </footer>
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-5 right-5 z-[9999] flex items-center p-4 bg-slate-900/95 text-white rounded-lg shadow-2xl border-l-4 border-emerald-500 backdrop-blur-md max-w-sm transition-all duration-300">
+          <div className="mr-3 flex-shrink-0">
+            {toast.type === "success" ? (
+              <div className="bg-emerald-500/20 text-emerald-400 p-1.5 rounded-full">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            ) : (
+              <div className="bg-red-500/20 text-red-400 p-1.5 rounded-full">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </div>
+            )}
+          </div>
+          <div className="text-xs font-bold">{toast.message}</div>
+        </div>
+      )}
     </div>
   );
 }

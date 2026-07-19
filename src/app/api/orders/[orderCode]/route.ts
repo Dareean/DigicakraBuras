@@ -46,7 +46,7 @@ export async function GET(
         productId: item.productId,
         productName: item.product?.name || null,
         fileUrl: item.fileUrl,
-        spec: JSON.parse(item.specJson || "{}"),
+        spec: item.specJson,
         qty: item.qty,
         unitPrice: item.unitPrice,
         subtotal: item.subtotal,
