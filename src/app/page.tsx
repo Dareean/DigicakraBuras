@@ -155,30 +155,30 @@ export default function Home() {
               rgba(0,0,0,0.6),
               rgba(0,0,0,0.6)
             ),
-            url('/assets/img/image (2).webp')
+            url('/assets/img/gmbar.webp')
           `,
         }}
       >
         <div className="max-w-4xl mx-auto text-center relative z-10 pb-8">
-          <span className="hero-anim-item opacity-0 inline-flex items-center rounded-full bg-red-500/10 px-3 py-1 text-sm font-medium text-red-400 ring-1 ring-inset ring-red-500/20 mb-4 animate-pulse">
+          <span className="hero-anim-item opacity-0 inline-flex items-center rounded-full bg-white/20 px-3 py-1 text-sm font-medium text-red-400 ring-1 ring-inset ring-red-500/20 mb-4 animate-pulse">
             Inovasi Digital Pembayaran BRIDA 2026
           </span>
-          <h1 className="hero-anim-item opacity-0 text-4xl sm:text-5xl font-extrabold tracking-tight mb-6">
+          <h1 className="hero-anim-item opacity-0 text-4xl sm:text-5xl sm:p-2 font-extrabold tracking-tight mb-6">
             Solusi Satu Pintu Fotokopi & ATK Cakrawala
           </h1>
-          <p className="hero-anim-item opacity-0 text-lg sm:text-xl text-slate-300 mb-8 max-w-2xl mx-auto leading-relaxed">
+          <p className="hero-anim-item opacity-0 text-lg sm:px-4 sm:text-xl text-slate-300 mb-8 max-w-2xl mx-auto leading-relaxed">
             Upload file Anda dari rumah, bayar dengan QRIS secara instan, lacak status secara real-time, dan ambil pesanan Anda saat sudah siap!
           </p>
           <div className="hero-anim-item opacity-0 flex flex-col sm:flex-row justify-center items-center gap-4">
             <Link
               href="/order"
-              className="w-full sm:w-auto inline-flex justify-center items-center px-8 py-3 text-base font-semibold text-white bg-red-600 rounded-md hover:bg-red-700 transition-all shadow-lg hover:shadow-red-900/30"
+              className="w-xs md:w-auto inline-flex justify-center items-center px-8 py-3 text-base font-semibold text-white bg-red-600 rounded-md hover:bg-red-700 transition-all shadow-lg hover:shadow-red-900/30"
             >
               Cetak Dokumen Online
             </Link>
             <a
               href="#katalog"
-              className="w-full sm:w-auto inline-flex justify-center items-center px-8 py-3 text-base font-semibold text-white bg-slate-800 border border-slate-700 rounded-md hover:bg-slate-700 transition-all shadow-md"
+              className="w-xs md:w-auto inline-flex justify-center items-center px-8 py-3 text-base font-semibold text-white bg-slate-800 border border-slate-700 rounded-md hover:bg-slate-700 transition-all shadow-md"
             >
               Belanja ATK Toko
             </a>

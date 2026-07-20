@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Navbar from "@/components/Navbar";
 import gsap from "gsap";
-import { UploadCloud, Trash2 } from "lucide-react";
+import { UploadCloud, Trash2, Search, RotateCw, Copy } from "lucide-react";
 
 interface CartItem {
   itemType: string;
@@ -641,7 +641,7 @@ export default function OrderConfig() {
                               title="Perbesar"
                               className="p-1 hover:bg-slate-100 rounded text-slate-500 hover:text-slate-800 text-[10px]"
                             >
-                              🔍
+                              <Search size={18} />
                             </button>
                             <button
                               type="button"
@@ -649,7 +649,7 @@ export default function OrderConfig() {
                               title="Putar"
                               className="p-1 hover:bg-slate-100 rounded text-slate-500 hover:text-slate-800 text-[10px]"
                             >
-                              🔄
+                              <RotateCw size={18} />
                             </button>
                             <button
                               type="button"
@@ -657,16 +657,16 @@ export default function OrderConfig() {
                               title="Duplikat"
                               className="p-1 hover:bg-slate-100 rounded text-slate-500 hover:text-slate-800 text-[10px]"
                             >
-                              📋
+                              <Copy size={18} />
                             </button>
-                            <button
+                            {/* <button
                               type="button"
                               onClick={() => deletePage(page.id)}
                               title="Hapus"
                               className="p-1 hover:bg-slate-100 rounded text-red-500 hover:text-red-700 text-[10px]"
                             >
-                              🗑️
-                            </button>
+                              <Trash2 size={18} />
+                            </button> */}
                           </div>
 
                           {/* Thumbnail preview body */}

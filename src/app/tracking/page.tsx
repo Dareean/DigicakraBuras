@@ -4,12 +4,14 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import gsap from "gsap";
-import { Award } from "lucide-react";
+import { Award, Gift } from "lucide-react";
 
 interface CustomerData {
   name: string;
   whatsappNumber: string;
   totalStamps: number;
+  rewardsEarned: number;
+  rewardsClaimed: number;
 }
 
 interface OrderItem {
@@ -141,11 +143,13 @@ function TrackingContent() {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
-      <Navbar />
+      <div className="no-print">
+        <Navbar />
+      </div>
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full flex-grow space-y-8">
         {/* Header */}
-        <div className="text-center max-w-xl mx-auto mb-6">
+        <div className="text-center max-w-xl mx-auto mb-6 no-print">
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Lacak Status Pesanan</h1>
           <p className="text-slate-500 text-sm mt-1">
             Masukkan nomor WhatsApp Anda untuk melihat daftar pesanan, memantau proses pengerjaan, dan memeriksa stempel loyalitas Anda.
@@ -153,7 +157,7 @@ function TrackingContent() {
         </div>
 
         {/* Search bar form */}
-        <form onSubmit={handleSearch} className="max-w-md mx-auto flex gap-2">
+        <form onSubmit={handleSearch} className="max-w-md mx-auto flex gap-2 no-print">
           <input
             type="tel"
             placeholder="Masukkan nomor WhatsApp (Contoh: 081234567890)"
@@ -171,18 +175,18 @@ function TrackingContent() {
         </form>
 
         {loading ? (
-          <div className="text-center py-12">
+          <div className="text-center py-12 no-print">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-red-600 border-t-transparent mb-2"></div>
             <p className="text-slate-500 text-xs">Mencari data pesanan...</p>
           </div>
         ) : searched ? (
           !customer ? (
-            <div className="text-center py-12 bg-white rounded-lg border border-slate-200 shadow-sm max-w-md mx-auto">
+            <div className="text-center py-12 bg-white rounded-lg border border-slate-200 shadow-sm max-w-md mx-auto no-print">
               <p className="text-slate-600 font-bold">Nomor WhatsApp tidak terdaftar</p>
               <p className="text-slate-400 text-xs mt-1">Silakan lakukan pemesanan online terlebih dahulu.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 no-print">
               
               {/* Left Column: Customer Profile & Stamps Board (1 Column width) */}
               <div className="tracking-anim-panel opacity-0 space-y-6 md:col-span-1">
@@ -197,7 +201,11 @@ function TrackingContent() {
                   <div className="space-y-3">
                     <div className="flex justify-between items-center text-xs">
                       <span className="font-bold text-slate-700">Stempel Digital</span>
-                      <span className="font-extrabold text-red-600">{customer.totalStamps % 10} / 10</span>
+                      <span className="font-extrabold text-red-600">
+                        {customer.totalStamps % 10 === 0 && customer.totalStamps > 0
+                          ? "10"
+                          : customer.totalStamps % 10} / 10
+                      </span>
                     </div>
 
                     {/* Stamp slot grid */}
@@ -223,14 +231,28 @@ function TrackingContent() {
                         );
                       })}
                     </div>
-                    
+
+                    {/* Total reward cycles earned */}
+                    {customer.totalStamps > 0 && (
+                      <p className="text-[10px] text-slate-400">
+                        Total stempel terkumpul: <span className="font-bold text-slate-600">{customer.totalStamps}</span>
+                        {Math.floor(customer.totalStamps / 10) > 0 && (
+                          <> &bull; Reward diraih: <span className="font-bold text-emerald-600">{Math.floor(customer.totalStamps / 10)}x</span></>
+                        )}
+                      </p>
+                    )}
+
                     <p className="text-[10px] text-slate-400 leading-normal">
-                      *Setiap 10 stempel digital yang terkumpul, Anda akan mendapatkan hadiah gratis atau potongan harga secara otomatis di kasir.
+                      *Setiap 10 stempel digital yang terkumpul, Anda berhak atas hadiah atau potongan harga di kasir.
                     </p>
 
-                    {customer.totalStamps >= 10 && (
-                      <div className="p-3 bg-emerald-50 border border-emerald-100 rounded text-[11px] text-emerald-800 font-bold leading-normal">
-                         Selamat! Anda telah mencapai target stempel dan berhak atas promo reward di toko!
+                    {/* Reward milestone banner — muncul saat ada reward belum diklaim */}
+                    {customer.rewardsEarned > customer.rewardsClaimed && (
+                      <div className="p-3 bg-amber-50 border border-amber-200 rounded text-[11px] text-amber-900 font-bold leading-relaxed flex items-start gap-2">
+                        <Gift size={16} className="text-amber-500 mt-0.5 flex-shrink-0" />
+                        <span>
+                          Selamat! Stempel Anda telah mencapai target. Tunjukkan halaman ini ke kasir untuk mengklaim hadiah reward Anda!
+                        </span>
                       </div>
                     )}
                   </div>
@@ -364,8 +386,8 @@ function TrackingContent() {
 
         {/* E-Nota Printable Modal overlay */}
         {selectedNotaOrder && (
-          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg shadow-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto border-t-8 border-t-red-600">
+          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 modal-overlay-print-reset">
+            <div className="bg-white rounded-lg shadow-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto border-t-8 border-t-red-600 modal-card-print-reset">
               
               {loadingNota ? (
                 <div className="p-12 text-center">
@@ -378,7 +400,7 @@ function TrackingContent() {
                   {/* Receipt Header */}
                   <div className="text-center border-b border-dashed border-slate-200 pb-4">
                     <h2 className="text-xl font-extrabold text-red-600 tracking-wider">FOTOCOPY CAKRAWALA</h2>
-                    <p className="text-xs text-slate-400 mt-0.5">Kota Palu, Sulawesi Tengah</p>
+                    <p className="text-xs text-slate-400 mt-0.5">Jalan Banawa No.57, Kota Donggala, Sulawesi Tengah</p>
                     <p className="text-[10px] text-slate-400">WhatsApp: 081234567890</p>
                     
                     <div className="mt-4 flex justify-between text-[11px] text-slate-500 max-w-xs mx-auto">
@@ -460,7 +482,7 @@ function TrackingContent() {
                   </div>
 
                   {/* Action buttons */}
-                  <div className="flex gap-3 pt-4 border-t border-slate-100 justify-end">
+                  <div className="flex gap-3 pt-4 border-t border-slate-100 justify-end no-print">
                     <button
                       type="button"
                       onClick={() => window.print()}

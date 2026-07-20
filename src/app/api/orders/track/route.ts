@@ -12,9 +12,14 @@ export async function GET(request: Request) {
 
     const cleanWa = whatsapp.trim();
 
-    // Find the customer
+    // Find the customer + count of claimed rewards
     const customer = await prisma.customer.findUnique({
       where: { whatsappNumber: cleanWa },
+      include: {
+        _count: {
+          select: { stamps: { where: { redeemed: true } } },
+        },
+      },
     });
 
     if (!customer) {
@@ -44,6 +49,8 @@ export async function GET(request: Request) {
         name: customer.name,
         whatsappNumber: customer.whatsappNumber,
         totalStamps: customer.totalStamps,
+        rewardsEarned: Math.floor(customer.totalStamps / 10),
+        rewardsClaimed: customer._count.stamps,
       },
       orders: orders.map((order) => ({
         id: order.id,

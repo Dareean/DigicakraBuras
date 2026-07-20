@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { deletePrintDocumentsByOrder } from "@/lib/storage";
+import { deductInventoryAndLoyalty } from "@/app/api/orders/route";
 
 export async function PATCH(
   request: Request,
@@ -28,6 +29,7 @@ export async function PATCH(
       where: { id: orderId },
       include: {
         payments: true,
+        stamps: true,
       },
     });
 
@@ -42,7 +44,8 @@ export async function PATCH(
         data: { status },
       });
 
-      // If status is updated to completed ("selesai") or ready ("siap_diambil"), and payment is POS/manual, make sure payment success is set
+      // If status is updated to completed (selesai) or ready (siap_diambil),
+      // and payment is pending, mark it as success
       if (status === "selesai" || status === "siap_diambil") {
         const payment = order.payments[0];
         if (payment && payment.status === "pending") {
@@ -54,6 +57,16 @@ export async function PATCH(
               verifiedById: session.userId,
             },
           });
+        }
+      }
+
+      // ── FIX: Tambahkan stempel ketika admin menandai pesanan sebagai "selesai" ──
+      // Guard: cek apakah stempel untuk order ini sudah pernah diberikan sebelumnya
+      // (supaya tidak double-stamp jika sudah di-stamp via check-status/POS flow).
+      if (status === "selesai" && order.customerId) {
+        const alreadyStamped = order.stamps.length > 0;
+        if (!alreadyStamped) {
+          await deductInventoryAndLoyalty(tx, orderId, order.customerId);
         }
       }
 
@@ -77,3 +90,4 @@ export async function PATCH(
     );
   }
 }
+
