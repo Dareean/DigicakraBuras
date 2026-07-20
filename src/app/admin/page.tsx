@@ -20,8 +20,16 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     fetch("/api/admin/dashboard/summary")
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        return res.json();
+      })
       .then((data) => {
+        if (data.error) {
+          throw new Error(data.error);
+        }
         setSummary(data);
         setLoading(false);
       })
@@ -58,7 +66,7 @@ export default function AdminDashboard() {
     );
   }
 
-  const maxRevenue = summary?.weeklyChartData.reduce((max, d) => Math.max(max, d.revenue), 1) || 1;
+  const maxRevenue = summary?.weeklyChartData?.reduce((max, d) => Math.max(max, d.revenue), 1) || 1;
 
   return (
     <AdminLayout>
@@ -78,7 +86,7 @@ export default function AdminDashboard() {
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pendapatan Hari Ini</span>
             <div className="mt-2">
               <span className="text-2xl font-extrabold text-slate-900 block">
-                Rp {summary?.todayRevenue.toLocaleString("id-ID")}
+                Rp {(summary?.todayRevenue ?? 0).toLocaleString("id-ID")}
               </span>
               <span className="text-[10px] text-emerald-600 font-semibold block mt-0.5">Transaksi Lunas</span>
             </div>
@@ -89,7 +97,7 @@ export default function AdminDashboard() {
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pendapatan Bulan Ini</span>
             <div className="mt-2">
               <span className="text-2xl font-extrabold text-slate-900 block">
-                Rp {summary?.monthRevenue.toLocaleString("id-ID")}
+                Rp {(summary?.monthRevenue ?? 0).toLocaleString("id-ID")}
               </span>
               <span className="text-[10px] text-slate-400 block mt-0.5">Terhitung sejak tgl 1</span>
             </div>
@@ -100,7 +108,7 @@ export default function AdminDashboard() {
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Antrean Pesanan Aktif</span>
             <div className="mt-2 flex justify-between items-baseline">
               <span className="text-3xl font-extrabold text-red-600">
-                {summary?.activeOrdersCount}
+                {summary?.activeOrdersCount ?? 0}
               </span>
               <Link href="/admin/orders" className="text-[10px] text-slate-400 hover:text-red-600 hover:underline font-bold">
                 Lihat Antrean &rarr;
@@ -112,8 +120,8 @@ export default function AdminDashboard() {
           <div className="dash-anim-card opacity-0 bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between h-32">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pemberitahuan Stok Menipis</span>
             <div className="mt-2 flex justify-between items-baseline">
-              <span className={`text-3xl font-extrabold ${summary?.lowStockItemsCount && summary.lowStockItemsCount > 0 ? "text-amber-600 animate-pulse" : "text-slate-700"}`}>
-                {summary?.lowStockItemsCount}
+              <span className={`text-3xl font-extrabold ${(summary?.lowStockItemsCount ?? 0) > 0 ? "text-amber-600 animate-pulse" : "text-slate-700"}`}>
+                {summary?.lowStockItemsCount ?? 0}
               </span>
               <Link href="/admin/inventory" className="text-[10px] text-slate-400 hover:text-amber-600 hover:underline font-bold">
                 Kelola Stok &rarr;
@@ -132,9 +140,9 @@ export default function AdminDashboard() {
 
           {/* Container chart: h-48 fixed, items-end agar bar tumbuh dari bawah */}
           <div className="flex justify-around items-end h-48 border-b border-slate-100 pb-0">
-            {summary?.weeklyChartData.map((dayData, idx) => {
+            {summary?.weeklyChartData?.map((dayData, idx) => {
               const heightPercent = Math.max(4, Math.round((dayData.revenue / maxRevenue) * 100));
-              const isToday = idx === (summary.weeklyChartData.length - 1);
+              const isToday = idx === (summary?.weeklyChartData?.length ?? 0) - 1;
               return (
                 <div key={idx} className="relative flex flex-col items-center gap-1.5 group" style={{ height: "100%", justifyContent: "flex-end" }}>
 
