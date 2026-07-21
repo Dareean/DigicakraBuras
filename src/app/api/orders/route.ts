@@ -259,6 +259,11 @@ export async function deductInventoryAndLoyalty(tx: any, orderId: number, custom
   // 3. Loyalty Stamp Program
   // Rules: 1 stamp per order. If customer ID exists, we increment their totalStamps,
   // and record a stamp transaction.
+  // Reward tracking: rewardsEarned = Math.floor(totalStamps / 10)
+  //                  rewardsClaimed = count of Stamp records where redeemed = true
+  // When rewardsEarned > rewardsClaimed → ada reward yang belum diklaim.
+  // Admin mengklaim reward via /api/admin/customers/[id]/claim-reward
+  // yang akan meng-update satu stamp record menjadi redeemed = true.
   if (customerId) {
     const customer = await tx.customer.findUnique({
       where: { id: customerId },
@@ -276,6 +281,7 @@ export async function deductInventoryAndLoyalty(tx: any, orderId: number, custom
           customerId,
           orderId,
           stampCount: 1,
+          redeemed: false, // selalu false saat dibuat; admin yang mengubah ke true saat klaim
         },
       });
     }

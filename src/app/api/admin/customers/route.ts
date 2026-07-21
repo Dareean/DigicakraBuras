@@ -14,6 +14,9 @@ export async function GET() {
         orders: {
           orderBy: { createdAt: "desc" },
         },
+        _count: {
+          select: { stamps: { where: { redeemed: true } } },
+        },
       },
       orderBy: { updatedAt: "desc" },
     });
@@ -23,6 +26,8 @@ export async function GET() {
       name: cust.name,
       whatsappNumber: cust.whatsappNumber,
       totalStamps: cust.totalStamps,
+      rewardsEarned: Math.floor(cust.totalStamps / 10),
+      rewardsClaimed: cust._count.stamps,
       createdAt: cust.createdAt,
       updatedAt: cust.updatedAt,
       transactionCount: cust.orders.length,
