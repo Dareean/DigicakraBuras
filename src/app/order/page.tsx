@@ -52,7 +52,10 @@ const getPdfPageCount = async (file: File): Promise<number> => {
   });
 };
 
-const renderPdfThumbnails = async (file: File, maxPages = 16): Promise<string[]> => {
+const renderPdfThumbnails = async (
+  file: File,
+  maxPages = 16,
+): Promise<string[]> => {
   try {
     const pdfjsLib = await new Promise<any>((resolve, reject) => {
       if ((window as any).pdfjsLib) {
@@ -60,10 +63,12 @@ const renderPdfThumbnails = async (file: File, maxPages = 16): Promise<string[]>
         return;
       }
       const script = document.createElement("script");
-      script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js";
+      script.src =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js";
       script.onload = () => {
         const pdfjs = (window as any).pdfjsLib;
-        pdfjs.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
+        pdfjs.GlobalWorkerOptions.workerSrc =
+          "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
         resolve(pdfjs);
       };
       script.onerror = () => reject("Failed to load PDF.js");
@@ -104,13 +109,19 @@ const renderMockPageContent = (pageNum: number) => {
           <div className="h-1.5 bg-slate-800 rounded w-1/2 mb-1.5"></div>
           <div className="border border-slate-200 rounded flex flex-col divide-y divide-slate-100 text-[6px]">
             <div className="grid grid-cols-3 bg-slate-100 p-0.5 font-bold">
-              <span>Hari</span><span>Tugas</span><span>Status</span>
+              <span>Hari</span>
+              <span>Tugas</span>
+              <span>Status</span>
             </div>
             <div className="grid grid-cols-3 p-0.5">
-              <span>Senin</span><span>Cetak</span><span>Lunas</span>
+              <span>Senin</span>
+              <span>Cetak</span>
+              <span>Lunas</span>
             </div>
             <div className="grid grid-cols-3 p-0.5">
-              <span>Selasa</span><span>ATK</span><span>Antre</span>
+              <span>Selasa</span>
+              <span>ATK</span>
+              <span>Antre</span>
             </div>
           </div>
         </div>
@@ -166,8 +177,15 @@ const getAtkVisualDetails = (name: string) => {
   if (lowercase.includes("pulpen") || lowercase.includes("pen")) {
     return { icon: "", bg: "bg-blue-50 border-blue-200 text-blue-600" };
   }
-  if (lowercase.includes("buku") || lowercase.includes("notebook") || lowercase.includes("binder")) {
-    return { icon: "", bg: "bg-emerald-50 border-emerald-200 text-emerald-600" };
+  if (
+    lowercase.includes("buku") ||
+    lowercase.includes("notebook") ||
+    lowercase.includes("binder")
+  ) {
+    return {
+      icon: "",
+      bg: "bg-emerald-50 border-emerald-200 text-emerald-600",
+    };
   }
   if (lowercase.includes("kertas") || lowercase.includes("hvs")) {
     return { icon: "", bg: "bg-slate-50 border-slate-200 text-slate-600" };
@@ -193,15 +211,18 @@ export default function OrderConfig() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [virtualPages, setVirtualPages] = useState<VirtualPage[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [largePreviewPage, setLargePreviewPage] = useState<VirtualPage | null>(null);
+  const [largePreviewPage, setLargePreviewPage] = useState<VirtualPage | null>(
+    null,
+  );
   const [excludedPages, setExcludedPages] = useState<string[]>([]);
   const [hoveredPage, setHoveredPage] = useState<number>(1);
 
   // Load GSAP animations on mount
   useEffect(() => {
-    gsap.fromTo(".form-section-anim", 
-      { opacity: 0, y: 25 }, 
-      { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: "power2.out" }
+    gsap.fromTo(
+      ".form-section-anim",
+      { opacity: 0, y: 25 },
+      { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: "power2.out" },
     );
   }, []);
 
@@ -220,9 +241,15 @@ export default function OrderConfig() {
 
   const [loading, setLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("Memproses Pesanan...");
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
 
-  const showToast = (message: string, type: "success" | "error" = "success") => {
+  const showToast = (
+    message: string,
+    type: "success" | "error" = "success",
+  ) => {
     setToast({ message, type });
     setTimeout(() => {
       setToast(null);
@@ -269,7 +296,9 @@ export default function OrderConfig() {
           }
         } else {
           // Image or other files treated as a single page
-          const objectUrl = file.type.startsWith("image/") ? URL.createObjectURL(file) : "";
+          const objectUrl = file.type.startsWith("image/")
+            ? URL.createObjectURL(file)
+            : "";
           newPages.push({
             id: Math.random().toString(36).substring(7),
             fileName: file.name,
@@ -324,7 +353,9 @@ export default function OrderConfig() {
 
   const rotatePage = (id: string) => {
     setVirtualPages((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, rotation: (p.rotation + 90) % 360 } : p))
+      prev.map((p) =>
+        p.id === id ? { ...p, rotation: (p.rotation + 90) % 360 } : p,
+      ),
     );
   };
 
@@ -388,11 +419,11 @@ export default function OrderConfig() {
   const getPrintSubtotal = () => {
     const isFileUploaded = virtualPages.length > 0;
     if (!isFileUploaded) return 0;
-    return (getPrintUnitPrice() * pages * copies) + getPrintAddonsTotal();
+    return getPrintUnitPrice() * pages * copies + getPrintAddonsTotal();
   };
 
   const getAtkTotal = () => {
-    return atkItems.reduce((sum, item) => sum + (item.unitPrice * item.qty), 0);
+    return atkItems.reduce((sum, item) => sum + item.unitPrice * item.qty, 0);
   };
 
   const getTotalAmount = () => {
@@ -416,7 +447,10 @@ export default function OrderConfig() {
     const hasAtk = atkItems.length > 0;
 
     if (!hasFile && !hasAtk) {
-      showToast("Pilih berkas untuk dicetak atau belanja ATK terlebih dahulu!", "error");
+      showToast(
+        "Pilih berkas untuk dicetak atau belanja ATK terlebih dahulu!",
+        "error",
+      );
       return;
     }
 
@@ -428,7 +462,8 @@ export default function OrderConfig() {
     if (hasFile) {
       const addons = [];
       if (hasJilid) addons.push({ addonType: "jilid", price: 5000 * copies });
-      if (hasLaminating) addons.push({ addonType: "laminating", price: 4000 * copies });
+      if (hasLaminating)
+        addons.push({ addonType: "laminating", price: 4000 * copies });
 
       const printedPages = virtualPages
         .map((vp, idx) => ({ ...vp, seq: idx + 1 }))
@@ -447,7 +482,10 @@ export default function OrderConfig() {
           pages: actualPages,
           copies: copies,
           color: colorType,
-          fileName: virtualPages.map(vp => vp.fileName).filter((v, i, a) => a.indexOf(v) === i).join(", "),
+          fileName: virtualPages
+            .map((vp) => vp.fileName)
+            .filter((v, i, a) => a.indexOf(v) === i)
+            .join(", "),
           printedPages: printedPages.length > 0 ? printedPages : [1],
         },
         addons,
@@ -487,7 +525,9 @@ export default function OrderConfig() {
       if (data.success) {
         // Find which files from selectedFiles are actually in virtualPages
         const activeFileNames = new Set(virtualPages.map((p) => p.fileName));
-        const filesToUpload = selectedFiles.filter((f) => activeFileNames.has(f.name));
+        const filesToUpload = selectedFiles.filter((f) =>
+          activeFileNames.has(f.name),
+        );
 
         if (filesToUpload.length > 0) {
           setLoadingMessage("Mengunggah berkas cetak...");
@@ -504,7 +544,9 @@ export default function OrderConfig() {
 
           const uploadData = await uploadRes.json();
           if (!uploadData.success) {
-            throw new Error(uploadData.error || "Gagal mengunggah berkas cetak");
+            throw new Error(
+              uploadData.error || "Gagal mengunggah berkas cetak",
+            );
           }
         }
 
@@ -530,14 +572,23 @@ export default function OrderConfig() {
       <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full flex-grow">
         {/* Title */}
         <div className="form-section-anim opacity-0 mb-8">
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Konfigurasi Pesanan</h1>
-          <p className="text-slate-500 text-sm mt-1">Lengkapi detail pesanan Anda untuk proses yang lebih cepat.</p>
+          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+            Konfigurasi Pesanan
+          </h1>
+          <p className="text-slate-500 text-sm mt-1">
+            Lengkapi detail pesanan Anda untuk proses yang lebih cepat.
+          </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-8 bg-white p-4 sm:p-8 rounded-lg border border-slate-200 shadow-sm">
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-8 bg-white p-4 sm:p-8 rounded-lg border border-slate-200 shadow-sm"
+        >
           {/* Identitas Pelanggan */}
           <section className="form-section-anim opacity-0 space-y-4">
-            <h2 className="text-lg font-bold text-slate-800 border-b border-slate-100 pb-2">Identitas Pelanggan</h2>
+            <h2 className="text-lg font-bold text-slate-800 border-b border-slate-100 pb-2">
+              Identitas Pelanggan
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
@@ -571,10 +622,12 @@ export default function OrderConfig() {
 
           {/* Unggah Berkas */}
           <section className="form-section-anim opacity-0 space-y-4">
-            <h2 className="text-lg font-bold text-slate-800 border-b border-slate-100 pb-2">Unggah Berkas & Susun Halaman</h2>
-            
+            <h2 className="text-lg font-bold text-slate-800 border-b border-slate-100 pb-2">
+              Unggah Berkas & Susun Halaman
+            </h2>
+
             {virtualPages.length === 0 ? (
-              <div 
+              <div
                 onClick={triggerFileSelect}
                 className="border-2 border-dashed border-slate-300 rounded-lg p-8 flex flex-col items-center justify-center bg-slate-50 hover:bg-slate-100/70 cursor-pointer transition-all hover:border-red-300"
               >
@@ -586,12 +639,16 @@ export default function OrderConfig() {
                   multiple
                   className="hidden"
                 />
-                
+
                 <UploadCloud className="w-12 h-12 text-slate-400 mb-3" />
-                
-                <p className="text-sm font-bold text-slate-800">Tarik & Lepas berkas di sini</p>
-                <p className="text-xs text-slate-400 mt-1">Mendukung PDF, gambar, atau berkas cetak lainnya</p>
-                
+
+                <p className="text-sm font-bold text-slate-800">
+                  Tarik & Lepas berkas di sini
+                </p>
+                <p className="text-xs text-slate-400 mt-1">
+                  Mendukung PDF, gambar, atau berkas cetak lainnya
+                </p>
+
                 <button
                   type="button"
                   className="mt-4 px-4 py-2 bg-white border border-slate-200 rounded-md text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition-all"
@@ -601,7 +658,6 @@ export default function OrderConfig() {
               </div>
             ) : (
               <div className="space-y-6">
-                
                 {/* Hidden input for adding more files */}
                 <input
                   type="file"
@@ -617,12 +673,14 @@ export default function OrderConfig() {
                   {virtualPages.map((page, idx) => {
                     const isExcluded = excludedPages.includes(page.id);
                     const isIncluded = !isExcluded;
-                    
+
                     return (
-                      <div key={page.id} className="flex items-center gap-3 flex-shrink-0">
+                      <div
+                        key={page.id}
+                        className="flex items-center gap-3 flex-shrink-0"
+                      >
                         {/* Page card container */}
                         <div className="relative group w-40 flex flex-col items-center bg-white border border-slate-250 rounded-lg p-2.5 shadow-sm hover:shadow transition-all">
-                          
                           {/* Checked Box indicator */}
                           <div className="absolute top-3.5 left-3.5 z-20">
                             <input
@@ -671,7 +729,6 @@ export default function OrderConfig() {
 
                           {/* Thumbnail preview body */}
                           <div className="relative w-36 h-48 bg-slate-50 rounded border border-slate-150 overflow-hidden flex items-center justify-center mt-6">
-                            
                             {/* Blue trash overlay on hover */}
                             <div className="absolute inset-0 bg-slate-900/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-10 pointer-events-none">
                               <button
@@ -686,15 +743,17 @@ export default function OrderConfig() {
                               </button>
                             </div>
 
-                            <div 
-                              style={{ transform: `rotate(${page.rotation}deg)` }} 
+                            <div
+                              style={{
+                                transform: `rotate(${page.rotation}deg)`,
+                              }}
                               className="w-full h-full transition-transform duration-200"
                             >
                               {page.previewUrl ? (
-                                <img 
-                                  src={page.previewUrl} 
-                                  className="w-full h-full object-contain" 
-                                  alt={`Hal ${page.pageNum}`} 
+                                <img
+                                  src={page.previewUrl}
+                                  className="w-full h-full object-contain"
+                                  alt={`Hal ${page.pageNum}`}
                                 />
                               ) : (
                                 // Render beautiful custom mock content
@@ -715,13 +774,14 @@ export default function OrderConfig() {
                           {/* Footer label */}
                           <div className="w-full text-center mt-3 text-xs">
                             <span className="font-bold text-slate-800 line-clamp-1 bg-red-50 text-red-700 px-1.5 py-0.5 rounded text-[9px] block">
-                              {page.fileName.length > 18 ? page.fileName.substring(0, 15) + "..." : page.fileName}
+                              {page.fileName.length > 18
+                                ? page.fileName.substring(0, 15) + "..."
+                                : page.fileName}
                             </span>
                             <span className="text-[11px] text-slate-400 block mt-1 font-extrabold">
                               {idx + 1}
                             </span>
                           </div>
-
                         </div>
 
                         {/* Plus button between cards */}
@@ -744,10 +804,13 @@ export default function OrderConfig() {
                     <span className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-lg font-bold group-hover:scale-110 transition-transform">
                       +
                     </span>
-                    <span className="text-xs font-bold text-blue-600">Tambah Berkas</span>
-                    <p className="text-[10px] text-slate-400 leading-tight">Add PDF, image, Word, Excel, and PowerPoint files</p>
+                    <span className="text-xs font-bold text-blue-600">
+                      Tambah Berkas
+                    </span>
+                    <p className="text-[10px] text-slate-400 leading-tight">
+                      Add PDF, image, Word, Excel, and PowerPoint files
+                    </p>
                   </div>
-
                 </div>
 
                 {/* Reset button */}
@@ -770,8 +833,10 @@ export default function OrderConfig() {
 
           {/* Opsi Cetak */}
           <section className="form-section-anim opacity-0 space-y-4">
-            <h2 className="text-lg font-bold text-slate-800 border-b border-slate-100 pb-2">Opsi Cetak</h2>
-            
+            <h2 className="text-lg font-bold text-slate-800 border-b border-slate-100 pb-2">
+              Opsi Cetak
+            </h2>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Jumlah Halaman */}
               <div>
@@ -800,7 +865,9 @@ export default function OrderConfig() {
                   type="number"
                   min="1"
                   value={copies}
-                  onChange={(e) => setCopies(Math.max(1, Number(e.target.value)))}
+                  onChange={(e) =>
+                    setCopies(Math.max(1, Number(e.target.value)))
+                  }
                   className="w-full px-4 h-11 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm font-semibold bg-white"
                 />
                 <span className="text-[9px] text-slate-450 block mt-1 leading-normal">
@@ -840,9 +907,8 @@ export default function OrderConfig() {
               </div>
             </div>
 
-
             {/* Dynamic Addons - only shown/active when file is selected */}
-            {(virtualPages.length > 0) && (
+            {virtualPages.length > 0 && (
               <div className="mt-4 p-4 bg-slate-50 rounded-lg border border-slate-150 space-y-3">
                 <span className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                   Add-on Tambahan (Jilid & Laminating)
@@ -856,9 +922,13 @@ export default function OrderConfig() {
                         onChange={(e) => setHasJilid(e.target.checked)}
                         className="rounded border-slate-300 text-red-600 focus:ring-red-500 h-4 w-4"
                       />
-                      <span className="text-xs font-bold text-slate-800">Jilid Dokumen</span>
+                      <span className="text-xs font-bold text-slate-800">
+                        Jilid Dokumen
+                      </span>
                     </div>
-                    <span className="text-xs font-extrabold text-red-600">+ Rp 5.000</span>
+                    <span className="text-xs font-extrabold text-red-600">
+                      + Rp 5.000
+                    </span>
                   </label>
 
                   <label className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-md cursor-pointer hover:border-slate-300">
@@ -869,9 +939,13 @@ export default function OrderConfig() {
                         onChange={(e) => setHasLaminating(e.target.checked)}
                         className="rounded border-slate-300 text-red-600 focus:ring-red-500 h-4 w-4"
                       />
-                      <span className="text-xs font-bold text-slate-800">Laminating</span>
+                      <span className="text-xs font-bold text-slate-800">
+                        Laminating
+                      </span>
                     </div>
-                    <span className="text-xs font-extrabold text-red-600">+ Rp 4.000</span>
+                    <span className="text-xs font-extrabold text-red-600">
+                      + Rp 4.000
+                    </span>
                   </label>
                 </div>
               </div>
@@ -882,7 +956,9 @@ export default function OrderConfig() {
           {atkItems.length > 0 ? (
             <section className="form-section-anim opacity-0 space-y-4">
               <div className="flex justify-between items-center border-b border-slate-100 pb-2">
-                <h2 className="text-lg font-bold text-slate-800">ATK yang Dipesan</h2>
+                <h2 className="text-lg font-bold text-slate-800">
+                  ATK yang Dipesan
+                </h2>
                 <button
                   type="button"
                   onClick={() => {
@@ -894,21 +970,30 @@ export default function OrderConfig() {
                   Hapus Semua ATK
                 </button>
               </div>
-              
+
               <div className="flex flex-col gap-3">
                 {atkItems.map((item, idx) => {
                   const visual = getAtkVisualDetails(item.name);
                   return (
-                    <div key={idx} className="p-3 bg-white border border-slate-200 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between shadow-sm hover:shadow-md transition-all gap-3 text-xs">
-                      
+                    <div
+                      key={idx}
+                      className="p-3 bg-white border border-slate-200 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between shadow-sm hover:shadow-md transition-all gap-3 text-xs"
+                    >
                       {/* Left: Icon & Product Info */}
                       <div className="flex items-center gap-3 w-full sm:w-auto">
                         <div className="text-left min-w-0 flex-1">
-                          <span className="font-bold text-slate-800 text-xs block truncate" title={item.name}>{item.name}</span>
-                          <p className="text-[10px] text-slate-400 font-medium">Rp {item.unitPrice.toLocaleString("id-ID")}</p>
+                          <span
+                            className="font-bold text-slate-800 text-xs block truncate"
+                            title={item.name}
+                          >
+                            {item.name}
+                          </span>
+                          <p className="text-[10px] text-slate-400 font-medium">
+                            Rp {item.unitPrice.toLocaleString("id-ID")}
+                          </p>
                         </div>
                       </div>
-                      
+
                       {/* Right: Qty Selector & Subtotal */}
                       <div className="flex items-center justify-between sm:justify-end gap-3 flex-shrink-0 w-full sm:w-auto border-t border-slate-150 pt-2.5 sm:border-t-0 sm:pt-0">
                         {/* Quantity Selector */}
@@ -920,7 +1005,9 @@ export default function OrderConfig() {
                           >
                             -
                           </button>
-                          <span className="w-6 text-center text-xs font-bold text-slate-800">{item.qty}</span>
+                          <span className="w-6 text-center text-xs font-bold text-slate-800">
+                            {item.qty}
+                          </span>
                           <button
                             type="button"
                             onClick={() => updateAtkQty(item.productId, 1)}
@@ -929,11 +1016,14 @@ export default function OrderConfig() {
                             +
                           </button>
                         </div>
-                        
+
                         {/* Subtotal & Delete */}
                         <div className="text-right flex flex-col justify-center items-end min-w-[75px]">
                           <span className="font-extrabold text-slate-900 text-xs">
-                            Rp {(item.unitPrice * item.qty).toLocaleString("id-ID")}
+                            Rp{" "}
+                            {(item.unitPrice * item.qty).toLocaleString(
+                              "id-ID",
+                            )}
                           </span>
                           <button
                             type="button"
@@ -952,17 +1042,21 @@ export default function OrderConfig() {
           ) : (
             <section className="form-section-anim opacity-0 space-y-4">
               <div className="flex justify-between items-center border-b border-slate-100 pb-2">
-                <h2 className="text-lg font-bold text-slate-800">ATK yang Dipesan</h2>
+                <h2 className="text-lg font-bold text-slate-800">
+                  ATK yang Dipesan
+                </h2>
               </div>
               <div className="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-lg text-center text-xs text-slate-400">
-                Belum ada produk ATK yang dipilih. 
-                <a href="/#katalog" className="text-red-500 font-bold ml-1 hover:underline">
+                Belum ada produk ATK yang dipilih.
+                <a
+                  href="/#katalog"
+                  className="text-red-500 font-bold ml-1 hover:underline"
+                >
                   Lihat Katalog ATK →
                 </a>
               </div>
             </section>
           )}
-
 
           {/* Notes */}
           <section className="form-section-anim opacity-0 space-y-2">
@@ -979,13 +1073,23 @@ export default function OrderConfig() {
 
           {/* Price Summary */}
           <section className="form-section-anim opacity-0 bg-red-50 border border-red-100 p-4 sm:p-6 rounded-lg space-y-3">
-            <h3 className="font-bold text-red-950 text-sm">Rincian Estimasi Biaya</h3>
-            
+            <h3 className="font-bold text-red-950 text-sm">
+              Rincian Estimasi Biaya
+            </h3>
+
             <div className="space-y-1.5 text-xs text-red-900 border-b border-red-200/50 pb-3">
-              {(virtualPages.length > 0) && (
+              {virtualPages.length > 0 && (
                 <div className="flex justify-between">
-                  <span>Cetak Jasa ({pages} hal x {copies} rangkap x Rp {getPrintUnitPrice().toLocaleString("id-ID")}):</span>
-                  <span>Rp {(getPrintUnitPrice() * pages * copies).toLocaleString("id-ID")}</span>
+                  <span>
+                    Cetak Jasa ({pages} hal x {copies} rangkap x Rp{" "}
+                    {getPrintUnitPrice().toLocaleString("id-ID")}):
+                  </span>
+                  <span>
+                    Rp{" "}
+                    {(getPrintUnitPrice() * pages * copies).toLocaleString(
+                      "id-ID",
+                    )}
+                  </span>
                 </div>
               )}
 
@@ -1012,7 +1116,9 @@ export default function OrderConfig() {
             </div>
 
             <div className="flex justify-between items-center pt-1">
-              <span className="text-sm font-bold text-red-950">Total Pembayaran:</span>
+              <span className="text-sm font-bold text-red-950">
+                Total Pembayaran:
+              </span>
               <span className="text-xl font-extrabold text-red-600">
                 Rp {getTotalAmount().toLocaleString("id-ID")}
               </span>
@@ -1047,33 +1153,43 @@ export default function OrderConfig() {
               >
                 ✕
               </button>
-              
+
               <div className="text-center">
                 <h3 className="text-sm font-bold text-slate-800">
-                  Pratinjau Halaman {virtualPages.findIndex(p => p.id === largePreviewPage.id) + 1}
+                  Pratinjau Halaman{" "}
+                  {virtualPages.findIndex((p) => p.id === largePreviewPage.id) +
+                    1}
                 </h3>
-                <p className="text-[10px] text-slate-400 mt-0.5">{largePreviewPage.fileName}</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  {largePreviewPage.fileName}
+                </p>
               </div>
 
               <div className="flex items-center justify-center bg-slate-50 border border-slate-200 rounded p-4 h-96 overflow-hidden">
-                <div 
-                  style={{ transform: `rotate(${largePreviewPage.rotation}deg)` }}
+                <div
+                  style={{
+                    transform: `rotate(${largePreviewPage.rotation}deg)`,
+                  }}
                   className="w-full h-full flex items-center justify-center transition-transform duration-200"
                 >
                   {largePreviewPage.previewUrl ? (
-                    <img 
-                      src={largePreviewPage.previewUrl} 
-                      className="max-w-full max-h-full object-contain shadow" 
-                      alt="Pratinjau Besar" 
+                    <img
+                      src={largePreviewPage.previewUrl}
+                      className="max-w-full max-h-full object-contain shadow"
+                      alt="Pratinjau Besar"
                     />
                   ) : (
                     // Mock zoom layout
                     <div className="w-56 h-72 bg-white border border-slate-250 rounded shadow-lg p-4 flex flex-col justify-between select-none">
-                      <span className="text-[10px] font-bold text-slate-400 border-b border-slate-100 pb-1">Tabel Timeline P.pdf</span>
+                      <span className="text-[10px] font-bold text-slate-400 border-b border-slate-100 pb-1">
+                        Tabel Timeline P.pdf
+                      </span>
                       <div className="flex-grow my-4 flex flex-col justify-around">
                         {renderMockPageContent(largePreviewPage.pageNum)}
                       </div>
-                      <span className="text-[10px] text-slate-400 text-right font-bold block">Hal {largePreviewPage.pageNum}</span>
+                      <span className="text-[10px] text-slate-400 text-right font-bold block">
+                        Hal {largePreviewPage.pageNum}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -1084,11 +1200,15 @@ export default function OrderConfig() {
                   type="button"
                   onClick={() => {
                     rotatePage(largePreviewPage.id);
-                    setLargePreviewPage(prev => prev ? { ...prev, rotation: (prev.rotation + 90) % 360 } : null);
+                    setLargePreviewPage((prev) =>
+                      prev
+                        ? { ...prev, rotation: (prev.rotation + 90) % 360 }
+                        : null,
+                    );
                   }}
                   className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded transition-all"
                 >
-                   Putar 90°
+                  Putar 90°
                 </button>
                 <button
                   type="button"
@@ -1109,19 +1229,50 @@ export default function OrderConfig() {
           <div className="mr-3 flex-shrink-0">
             {toast.type === "success" ? (
               <div className="bg-emerald-500/20 text-emerald-400 p-1.5 rounded-full">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="3"
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
               </div>
             ) : (
               <div className="bg-red-500/20 text-red-400 p-1.5 rounded-full">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="3"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </div>
             )}
           </div>
           <div className="text-xs font-bold">{toast.message}</div>
+        </div>
+      )}
+
+      {loading && (
+        <div className="fixed inset-0 z-50 bg-slate-950/90 flex items-center justify-center p-4">
+          <div className="flex flex-col items-center gap-4 rounded-3xl bg-slate-900/95 border border-slate-800 p-8 shadow-2xl shadow-black/40">
+            <div className="h-16 w-16 rounded-full border-4 border-slate-700 border-t-red-500 animate-spin" />
+            <p className="text-sm font-semibold text-white text-center">
+              {loadingMessage}
+            </p>
+          </div>
         </div>
       )}
     </div>

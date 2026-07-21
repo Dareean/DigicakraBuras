@@ -201,9 +201,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <Link
                   key={link.name}
                   href={link.href}
-                  className={`flex items-center space-x-3 px-4 py-2.5 rounded-md text-xs font-semibold transition-all ${
+                  className={`flex items-center space-x-3 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all ${
                     isActive
-                      ? "bg-red-600 text-white shadow-md shadow-red-900/10"
+                      ? "bg-gray-100 w-3xs text-black shadow-red-900/10"
                       : "text-slate-400 hover:bg-slate-800 hover:text-white"
                   }`}
                 >
@@ -228,7 +228,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </aside>
 
       {/* Main content frame */}
-      <main className="flex-grow p-6 md:p-8 overflow-y-auto max-w-6xl mx-auto w-full">
+      <main className="grow p-6 md:p-8 overflow-y-auto max-w-6xl mx-auto w-full">
         {children}
       </main>
     </div>

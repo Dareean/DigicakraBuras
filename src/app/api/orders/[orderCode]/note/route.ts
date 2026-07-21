@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { generateIntegrityCode } from "@/lib/nota-integrity";
 
 export async function GET(
   request: Request,
@@ -28,10 +29,18 @@ export async function GET(
 
     const isPaid = order.payments[0]?.status === "success";
 
-    // Calculate details
+    // Guard: e-nota hanya tersedia untuk order yang sudah lunas
+    if (!isPaid) {
+      return NextResponse.json(
+        { error: "E-Nota hanya tersedia untuk transaksi yang telah lunas." },
+        { status: 403 }
+      );
+    }
+
     const ppnRate = 11.0; // Default PPN
     const subtotalAmount = order.totalAmount / (1 + ppnRate / 100);
     const ppnAmount = order.totalAmount - subtotalAmount;
+    const integrityCode = generateIntegrityCode(order.orderCode, order.totalAmount);
 
     return NextResponse.json({
       receiptNumber: `N-${order.orderCode.split("-")[1] || "000"}-${order.id}`,
@@ -42,6 +51,7 @@ export async function GET(
       orderSource: order.orderSource,
       isPaid,
       paymentMethod: order.payments[0]?.paymentMethod || "qris",
+      integrityCode, // Kode HMAC untuk verifikasi keaslian nota
       items: order.items.map((item) => ({
         name: item.itemType === "atk" ? (item.product?.name || "Produk ATK") : `Layanan Print (${item.itemType})`,
         qty: item.qty,

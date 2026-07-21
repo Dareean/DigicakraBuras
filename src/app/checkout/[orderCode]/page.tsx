@@ -433,9 +433,6 @@ function QrisPaymentState({
         {/* Header merah QRIS */}
         <div className="bg-red-600 p-2.5 flex items-center justify-between text-white font-extrabold text-[10px] tracking-widest">
           <span>QRIS</span>
-          <span className="text-[7px] font-normal leading-none opacity-85">
-            GPN / BANK INDONESIA
-          </span>
         </div>
 
         {/* QR Code Image */}
