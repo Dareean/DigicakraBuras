@@ -51,9 +51,12 @@ export default function AdminCustomers() {
   const claimReward = async (customerId: number, customerName: string) => {
     setClaimingId(customerId);
     try {
-      const res = await fetch(`/api/admin/customers/${customerId}/claim-reward`, {
-        method: "POST",
-      });
+      const res = await fetch(
+        `/api/admin/customers/${customerId}/claim-reward`,
+        {
+          method: "POST",
+        },
+      );
       const data = await res.json();
       if (data.success) {
         setClaimToast(data.message);
@@ -62,7 +65,7 @@ export default function AdminCustomers() {
         setSelectedCust((prev) =>
           prev?.id === customerId
             ? { ...prev, rewardsClaimed: prev.rewardsClaimed + 1 }
-            : prev
+            : prev,
         );
       } else {
         setClaimToast(data.error || "Gagal mengklaim reward.");
@@ -78,11 +81,15 @@ export default function AdminCustomers() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        
         {/* Title */}
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">Data Pelanggan & Loyalitas</h1>
-          <p className="text-slate-500 text-xs mt-0.5">Kelola data stempel digital pelanggan serta tinjau histori riwayat transaksi.</p>
+          <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">
+            Data Pelanggan & Loyalitas
+          </h1>
+          <p className="text-slate-500 text-xs mt-0.5">
+            Kelola data stempel digital pelanggan serta tinjau histori riwayat
+            transaksi.
+          </p>
         </div>
 
         {loading ? (
@@ -92,7 +99,6 @@ export default function AdminCustomers() {
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            
             {/* Left: Customers Table (7 columns) */}
             <div className="lg:col-span-7 bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
@@ -101,7 +107,9 @@ export default function AdminCustomers() {
                     <tr>
                       <th className="px-6 py-4">Pelanggan</th>
                       <th className="px-6 py-4 text-center">Stempel Aktif</th>
-                      <th className="px-6 py-4 text-center">Jumlah Transaksi</th>
+                      <th className="px-6 py-4 text-center">
+                        Jumlah Transaksi
+                      </th>
                       <th className="px-6 py-4 text-right">Aksi</th>
                     </tr>
                   </thead>
@@ -115,21 +123,34 @@ export default function AdminCustomers() {
                         onClick={() => setSelectedCust(c)}
                       >
                         <td className="px-6 py-4">
-                          <span className="font-bold text-slate-800 block">{c.name || "Tanpa Nama"}</span>
-                          <span className="text-[10px] text-slate-400 mt-0.5">{c.whatsappNumber}</span>
+                          <span className="font-bold text-slate-800 block">
+                            {c.name || "Tanpa Nama"}
+                          </span>
+                          <span className="text-[10px] text-slate-400 mt-0.5">
+                            {c.whatsappNumber}
+                          </span>
                         </td>
                         <td className="px-6 py-4 text-center font-bold text-slate-800">
                           {(() => {
-                            const hasPendingReward = c.rewardsEarned > c.rewardsClaimed;
-                            const currentCycleStamps = c.totalStamps % 10;
-                            const displayStamps = hasPendingReward && currentCycleStamps === 0 ? 10 : currentCycleStamps;
+                            const cycleStamps = Math.max(
+                              0,
+                              c.totalStamps - c.rewardsClaimed * 10,
+                            );
+                            const hasPendingReward =
+                              c.rewardsEarned > c.rewardsClaimed;
+                            const displayStamps =
+                              hasPendingReward && cycleStamps === 0
+                                ? 10
+                                : cycleStamps;
                             return (
                               <>
-                                <span className={`px-2 py-0.5 rounded-full font-extrabold text-[10px] border ${
-                                  hasPendingReward
-                                    ? "bg-amber-50 text-amber-700 border-amber-200"
-                                    : "bg-red-50 text-red-600 border-red-150"
-                                }`}>
+                                <span
+                                  className={`px-2 py-0.5 rounded-full font-extrabold text-[10px] border ${
+                                    hasPendingReward
+                                      ? "bg-amber-50 text-amber-700 border-amber-200"
+                                      : "bg-red-50 text-red-600 border-red-150"
+                                  }`}
+                                >
                                   {displayStamps} / 10
                                 </span>
                                 {hasPendingReward && (
@@ -171,11 +192,12 @@ export default function AdminCustomers() {
                                 Klaim
                               </button>
                             )}
-                            {c.rewardsEarned > 0 && c.rewardsEarned === c.rewardsClaimed && (
-                              <span className="inline-flex items-center gap-1 text-emerald-600 text-[10px] font-bold">
-                                <CheckCircle size={11} /> Terklaim
-                              </span>
-                            )}
+                            {c.rewardsEarned > 0 &&
+                              c.rewardsEarned === c.rewardsClaimed && (
+                                <span className="inline-flex items-center gap-1 text-emerald-600 text-[10px] font-bold">
+                                  <CheckCircle size={11} /> Terklaim
+                                </span>
+                              )}
                             <button
                               type="button"
                               className="text-xs text-red-600 hover:text-red-800 font-bold hover:underline"
@@ -196,16 +218,27 @@ export default function AdminCustomers() {
               {selectedCust ? (
                 <div className="space-y-4">
                   <div className="border-b border-slate-100 pb-3">
-                    <span className="text-[9px] font-bold text-slate-400 uppercase">Riwayat Transaksi</span>
-                    <h2 className="text-sm font-extrabold text-slate-800 mt-1">{selectedCust.name || "Walk-in"}</h2>
-                    <p className="text-xs text-slate-500">{selectedCust.whatsappNumber}</p>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase">
+                      Riwayat Transaksi
+                    </span>
+                    <h2 className="text-sm font-extrabold text-slate-800 mt-1">
+                      {selectedCust.name || "Walk-in"}
+                    </h2>
+                    <p className="text-xs text-slate-500">
+                      {selectedCust.whatsappNumber}
+                    </p>
                   </div>
 
                   <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
                     {selectedCust.orders.map((o) => (
-                      <div key={o.id} className="text-xs flex justify-between items-center pb-2.5 border-b border-slate-50 last:border-b-0 last:pb-0">
+                      <div
+                        key={o.id}
+                        className="text-xs flex justify-between items-center pb-2.5 border-b border-slate-50 last:border-b-0 last:pb-0"
+                      >
                         <div>
-                          <span className="font-bold text-slate-800">{o.orderCode}</span>
+                          <span className="font-bold text-slate-800">
+                            {o.orderCode}
+                          </span>
                           <p className="text-[9px] text-slate-400">
                             {new Date(o.createdAt).toLocaleDateString("id-ID", {
                               day: "numeric",
@@ -218,7 +251,9 @@ export default function AdminCustomers() {
                           <span className="font-extrabold text-slate-900 block">
                             Rp {o.totalAmount.toLocaleString("id-ID")}
                           </span>
-                          <span className="text-[9px] uppercase font-bold text-slate-400 block">{o.status}</span>
+                          <span className="text-[9px] uppercase font-bold text-slate-400 block">
+                            {o.status}
+                          </span>
                         </div>
                       </div>
                     ))}
@@ -226,11 +261,11 @@ export default function AdminCustomers() {
                 </div>
               ) : (
                 <div className="text-center py-20 text-slate-400 text-xs italic">
-                  Pilih pelanggan di tabel sebelah kiri untuk melihat riwayat transaksi lengkap.
+                  Pilih pelanggan di tabel sebelah kiri untuk melihat riwayat
+                  transaksi lengkap.
                 </div>
               )}
             </div>
-
           </div>
         )}
       </div>

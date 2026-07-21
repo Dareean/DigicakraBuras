@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import gsap from "gsap";
-import { Award, Gift } from "lucide-react";
+import { Award, Gift, Printer } from "lucide-react";
 
 interface CustomerData {
   name: string;
@@ -39,7 +39,9 @@ function TrackingContent() {
   const [loading, setLoading] = useState(false);
 
   // E-Nota Modal
-  const [selectedNotaOrder, setSelectedNotaOrder] = useState<OrderItem | null>(null);
+  const [selectedNotaOrder, setSelectedNotaOrder] = useState<OrderItem | null>(
+    null,
+  );
   const [notaData, setNotaData] = useState<any | null>(null);
   const [loadingNota, setLoadingNota] = useState(false);
 
@@ -47,14 +49,31 @@ function TrackingContent() {
   useEffect(() => {
     if (customer) {
       // Columns
-      gsap.fromTo(".tracking-anim-panel",
+      gsap.fromTo(
+        ".tracking-anim-panel",
         { opacity: 0, y: 30 },
-        { opacity: 1, y: 0, duration: 0.6, stagger: 0.15, ease: "power2.out", overwrite: "auto" }
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.6,
+          stagger: 0.15,
+          ease: "power2.out",
+          overwrite: "auto",
+        },
       );
       // Stamps slots
-      gsap.fromTo(".stamp-anim-slot",
+      gsap.fromTo(
+        ".stamp-anim-slot",
         { scale: 0.6, opacity: 0 },
-        { scale: 1, opacity: 1, duration: 0.4, stagger: 0.05, ease: "back.out(1.5)", overwrite: "auto", delay: 0.1 }
+        {
+          scale: 1,
+          opacity: 1,
+          duration: 0.4,
+          stagger: 0.05,
+          ease: "back.out(1.5)",
+          overwrite: "auto",
+          delay: 0.1,
+        },
       );
     }
   }, [customer]);
@@ -114,13 +133,20 @@ function TrackingContent() {
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case "menunggu_pembayaran": return "Menunggu Pembayaran";
-      case "diterima": return "Pesanan Diterima";
-      case "diproses": return "Sedang Diproses";
-      case "siap_diambil": return "Siap Diambil";
-      case "selesai": return "Selesai";
-      case "dibatalkan": return "Dibatalkan";
-      default: return status;
+      case "menunggu_pembayaran":
+        return "Menunggu Pembayaran";
+      case "diterima":
+        return "Pesanan Diterima";
+      case "diproses":
+        return "Sedang Diproses";
+      case "siap_diambil":
+        return "Siap Diambil";
+      case "selesai":
+        return "Selesai";
+      case "dibatalkan":
+        return "Dibatalkan";
+      default:
+        return status;
     }
   };
 
@@ -128,7 +154,7 @@ function TrackingContent() {
   const openEnota = (order: OrderItem) => {
     setSelectedNotaOrder(order);
     setLoadingNota(true);
-    
+
     fetch(`/api/orders/${order.orderCode}/note`)
       .then((res) => res.json())
       .then((data) => {
@@ -150,14 +176,20 @@ function TrackingContent() {
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full flex-grow space-y-8">
         {/* Header */}
         <div className="text-center max-w-xl mx-auto mb-6 no-print">
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Lacak Status Pesanan</h1>
+          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+            Lacak Status Pesanan
+          </h1>
           <p className="text-slate-500 text-sm mt-1">
-            Masukkan nomor WhatsApp Anda untuk melihat daftar pesanan, memantau proses pengerjaan, dan memeriksa stempel loyalitas Anda.
+            Masukkan nomor WhatsApp Anda untuk melihat daftar pesanan, memantau
+            proses pengerjaan, dan memeriksa stempel loyalitas Anda.
           </p>
         </div>
 
         {/* Search bar form */}
-        <form onSubmit={handleSearch} className="max-w-md mx-auto flex gap-2 no-print">
+        <form
+          onSubmit={handleSearch}
+          className="max-w-md mx-auto flex gap-2 no-print"
+        >
           <input
             type="tel"
             placeholder="Masukkan nomor WhatsApp (Contoh: 081234567890)"
@@ -182,37 +214,67 @@ function TrackingContent() {
         ) : searched ? (
           !customer ? (
             <div className="text-center py-12 bg-white rounded-lg border border-slate-200 shadow-sm max-w-md mx-auto no-print">
-              <p className="text-slate-600 font-bold">Nomor WhatsApp tidak terdaftar</p>
-              <p className="text-slate-400 text-xs mt-1">Silakan lakukan pemesanan online terlebih dahulu.</p>
+              <p className="text-slate-600 font-bold">
+                Nomor WhatsApp tidak terdaftar
+              </p>
+              <p className="text-slate-400 text-xs mt-1">
+                Silakan lakukan pemesanan online terlebih dahulu.
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 no-print">
-              
               {/* Left Column: Customer Profile & Stamps Board (1 Column width) */}
               <div className="tracking-anim-panel opacity-0 space-y-6 md:col-span-1">
                 <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm space-y-4">
                   <div className="border-b border-slate-100 pb-3">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase">Profil Pelanggan</span>
-                    <h2 className="text-lg font-extrabold text-slate-800 mt-1">{customer.name}</h2>
-                    <p className="text-xs text-slate-500">{customer.whatsappNumber}</p>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase">
+                      Profil Pelanggan
+                    </span>
+                    <h2 className="text-lg font-extrabold text-slate-800 mt-1">
+                      {customer.name}
+                    </h2>
+                    <p className="text-xs text-slate-500">
+                      {customer.whatsappNumber}
+                    </p>
                   </div>
 
                   {/* Stamp Digital Grid (10 stamp slots) */}
                   <div className="space-y-3">
                     <div className="flex justify-between items-center text-xs">
-                      <span className="font-bold text-slate-700">Stempel Digital</span>
+                      <span className="font-bold text-slate-700">
+                        Stempel Digital
+                      </span>
                       <span className="font-extrabold text-red-600">
-                        {customer.totalStamps % 10 === 0 && customer.totalStamps > 0
-                          ? "10"
-                          : customer.totalStamps % 10} / 10
+                        {(() => {
+                          const cycleStamps = Math.max(
+                            0,
+                            customer.totalStamps - customer.rewardsClaimed * 10,
+                          );
+                          const hasPendingReward =
+                            customer.rewardsEarned > customer.rewardsClaimed;
+                          const displayStamps =
+                            hasPendingReward && cycleStamps === 0
+                              ? 10
+                              : cycleStamps;
+                          return `${displayStamps} / 10`;
+                        })()}
                       </span>
                     </div>
 
                     {/* Stamp slot grid */}
                     <div className="grid grid-cols-5 gap-2">
                       {Array.from({ length: 10 }).map((_, idx) => {
-                        const stampValue = customer.totalStamps % 10;
-                        const isStamped = idx < (stampValue === 0 && customer.totalStamps > 0 ? 10 : stampValue);
+                        const cycleStamps = Math.max(
+                          0,
+                          customer.totalStamps - customer.rewardsClaimed * 10,
+                        );
+                        const hasPendingReward =
+                          customer.rewardsEarned > customer.rewardsClaimed;
+                        const displayStamps =
+                          hasPendingReward && cycleStamps === 0
+                            ? 10
+                            : cycleStamps;
+                        const isStamped = idx < displayStamps;
                         return (
                           <div
                             key={idx}
@@ -235,23 +297,38 @@ function TrackingContent() {
                     {/* Total reward cycles earned */}
                     {customer.totalStamps > 0 && (
                       <p className="text-[10px] text-slate-400">
-                        Total stempel terkumpul: <span className="font-bold text-slate-600">{customer.totalStamps}</span>
+                        Total stempel terkumpul:{" "}
+                        <span className="font-bold text-slate-600">
+                          {customer.totalStamps}
+                        </span>
                         {Math.floor(customer.totalStamps / 10) > 0 && (
-                          <> &bull; Reward diraih: <span className="font-bold text-emerald-600">{Math.floor(customer.totalStamps / 10)}x</span></>
+                          <>
+                            {" "}
+                            &bull; Reward diraih:{" "}
+                            <span className="font-bold text-emerald-600">
+                              {Math.floor(customer.totalStamps / 10)}x
+                            </span>
+                          </>
                         )}
                       </p>
                     )}
 
                     <p className="text-[10px] text-slate-400 leading-normal">
-                      *Setiap 10 stempel digital yang terkumpul, Anda berhak atas hadiah atau potongan harga di kasir.
+                      *Setiap 10 stempel digital yang terkumpul, Anda berhak
+                      atas hadiah atau potongan harga di kasir.
                     </p>
 
                     {/* Reward milestone banner — muncul saat ada reward belum diklaim */}
                     {customer.rewardsEarned > customer.rewardsClaimed && (
                       <div className="p-3 bg-amber-50 border border-amber-200 rounded text-[11px] text-amber-900 font-bold leading-relaxed flex items-start gap-2">
-                        <Gift size={16} className="text-amber-500 mt-0.5 flex-shrink-0" />
+                        <Gift
+                          size={16}
+                          className="text-amber-500 mt-0.5 flex-shrink-0"
+                        />
                         <span>
-                          Selamat! Stempel Anda telah mencapai target. Tunjukkan halaman ini ke kasir untuk mengklaim hadiah reward Anda!
+                          Selamat! Stempel Anda telah mencapai target. Tunjukkan
+                          halaman ini ke kasir untuk mengklaim hadiah reward
+                          Anda!
                         </span>
                       </div>
                     )}
@@ -261,11 +338,15 @@ function TrackingContent() {
 
               {/* Right Column: Orders status tracking timeline (2 Columns width) */}
               <div className="tracking-anim-panel opacity-0 space-y-6 md:col-span-2">
-                <h3 className="text-base font-bold text-slate-800">Daftar Pesanan Anda</h3>
+                <h3 className="text-base font-bold text-slate-800">
+                  Daftar Pesanan Anda
+                </h3>
 
                 {orders.length === 0 ? (
                   <div className="text-center py-12 bg-white rounded-lg border border-slate-200 shadow-sm">
-                    <p className="text-slate-500 text-xs">Belum ada transaksi tercatat untuk nomor ini.</p>
+                    <p className="text-slate-500 text-xs">
+                      Belum ada transaksi tercatat untuk nomor ini.
+                    </p>
                   </div>
                 ) : (
                   <div className="space-y-6">
@@ -274,8 +355,10 @@ function TrackingContent() {
                       const isOrderDibatalkan = order.status === "dibatalkan";
 
                       return (
-                        <div key={order.id} className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-                          
+                        <div
+                          key={order.id}
+                          className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden"
+                        >
                           {/* Card Header info */}
                           <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs">
                             <div>
@@ -283,22 +366,26 @@ function TrackingContent() {
                                 {order.orderCode}
                               </span>
                               <span className="text-slate-400">
-                                {new Date(order.createdAt).toLocaleDateString("id-ID", {
-                                  day: "numeric",
-                                  month: "long",
-                                  year: "numeric",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })}
+                                {new Date(order.createdAt).toLocaleDateString(
+                                  "id-ID",
+                                  {
+                                    day: "numeric",
+                                    month: "long",
+                                    year: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  },
+                                )}
                               </span>
                             </div>
                             <div className="flex items-center gap-3">
                               <span className="font-extrabold text-slate-900 text-sm">
                                 Rp {order.totalAmount.toLocaleString("id-ID")}
                               </span>
-                              
+
                               {/* E-Nota trigger button */}
-                              {(order.status === "selesai" || order.payment?.status === "success") && (
+                              {(order.status === "selesai" ||
+                                order.payment?.status === "success") && (
                                 <button
                                   type="button"
                                   onClick={() => openEnota(order)}
@@ -319,8 +406,13 @@ function TrackingContent() {
                             ) : order.status === "menunggu_pembayaran" ? (
                               <div className="flex flex-col sm:flex-row items-center justify-between p-4 bg-amber-50 border border-amber-100 rounded-md gap-3">
                                 <div>
-                                  <p className="text-xs font-bold text-amber-900">Menunggu Verifikasi Pembayaran</p>
-                                  <p className="text-[11px] text-amber-700 mt-0.5">Silakan lakukan pembayaran QRIS untuk memproses pesanan Anda.</p>
+                                  <p className="text-xs font-bold text-amber-900">
+                                    Menunggu Verifikasi Pembayaran
+                                  </p>
+                                  <p className="text-[11px] text-amber-700 mt-0.5">
+                                    Silakan lakukan pembayaran QRIS untuk
+                                    memproses pesanan Anda.
+                                  </p>
                                 </div>
                                 <a
                                   href={`/checkout/${order.orderCode}`}
@@ -332,7 +424,6 @@ function TrackingContent() {
                             ) : (
                               /* Stepper timeline layout */
                               <div className="relative flex flex-col sm:flex-row justify-between items-start sm:items-center w-full gap-4 sm:gap-0">
-                                
                                 {/* Background Line */}
                                 <div className="absolute left-[15px] sm:left-[10%] right-auto sm:right-[10%] top-[15px] sm:top-4 bottom-4 sm:bottom-auto w-0.5 sm:w-auto h-full sm:h-0.5 bg-slate-200 -z-10 hidden sm:block"></div>
 
@@ -345,41 +436,49 @@ function TrackingContent() {
                                 ].map((s) => {
                                   const isActive = currentStep >= s.step;
                                   return (
-                                    <div key={s.step} className="flex sm:flex-col items-center gap-3 sm:gap-2 w-full sm:w-1/4">
-                                      <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs border-2 shadow-sm transition-all ${
-                                        isActive
-                                          ? "bg-red-600 border-red-600 text-white"
-                                          : "bg-white border-slate-200 text-slate-400"
-                                      }`}>
+                                    <div
+                                      key={s.step}
+                                      className="flex sm:flex-col items-center gap-3 sm:gap-2 w-full sm:w-1/4"
+                                    >
+                                      <div
+                                        className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs border-2 shadow-sm transition-all ${
+                                          isActive
+                                            ? "bg-red-600 border-red-600 text-white"
+                                            : "bg-white border-slate-200 text-slate-400"
+                                        }`}
+                                      >
                                         {s.step}
                                       </div>
                                       <div className="text-left sm:text-center">
-                                        <span className={`text-xs font-bold ${isActive ? "text-slate-800" : "text-slate-400"}`}>
+                                        <span
+                                          className={`text-xs font-bold ${isActive ? "text-slate-800" : "text-slate-400"}`}
+                                        >
                                           {s.label}
                                         </span>
                                       </div>
                                     </div>
                                   );
                                 })}
-
                               </div>
                             )}
 
                             {order.pickupNote && (
                               <div className="mt-4 pt-4 border-t border-slate-100 text-xs text-slate-500">
-                                <span className="font-semibold text-slate-700">Catatan :</span>
-                                <p className="italic mt-1">"{order.pickupNote}"</p>
+                                <span className="font-semibold text-slate-700">
+                                  Catatan :
+                                </span>
+                                <p className="italic mt-1">
+                                  "{order.pickupNote}"
+                                </p>
                               </div>
                             )}
                           </div>
-
                         </div>
                       );
                     })}
                   </div>
                 )}
               </div>
-
             </div>
           )
         ) : null}
@@ -388,7 +487,6 @@ function TrackingContent() {
         {selectedNotaOrder && (
           <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 modal-overlay-print-reset">
             <div className="bg-white rounded-lg shadow-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto border-t-8 border-t-red-600 modal-card-print-reset">
-              
               {loadingNota ? (
                 <div className="p-12 text-center">
                   <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-red-600 border-t-transparent mb-2"></div>
@@ -396,16 +494,25 @@ function TrackingContent() {
                 </div>
               ) : notaData ? (
                 <div className="p-8 space-y-6" id="printable-receipt">
-                  
                   {/* Receipt Header */}
                   <div className="text-center border-b border-dashed border-slate-200 pb-4">
-                    <h2 className="text-xl font-extrabold text-red-600 tracking-wider">FOTOCOPY CAKRAWALA</h2>
-                    <p className="text-xs text-slate-400 mt-0.5">Jalan Banawa No.57, Kota Donggala, Sulawesi Tengah</p>
-                    <p className="text-[10px] text-slate-400">WhatsApp: 081234567890</p>
-                    
+                    <h2 className="text-xl font-extrabold text-red-600 tracking-wider">
+                      FOTOCOPY CAKRAWALA
+                    </h2>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Jalan Banawa No.57, Kota Donggala, Sulawesi Tengah
+                    </p>
+                    <p className="text-[10px] text-slate-400">
+                      WhatsApp: 081234567890
+                    </p>
+
                     <div className="mt-4 flex justify-between text-[11px] text-slate-500 max-w-xs mx-auto">
                       <span>No: {notaData.receiptNumber}</span>
-                      <span>{new Date(notaData.createdAt).toLocaleDateString("id-ID")}</span>
+                      <span>
+                        {new Date(notaData.createdAt).toLocaleDateString(
+                          "id-ID",
+                        )}
+                      </span>
                     </div>
                   </div>
 
@@ -413,34 +520,52 @@ function TrackingContent() {
                   <div className="text-xs space-y-1 bg-slate-50 p-3 rounded border border-slate-100">
                     <div className="flex justify-between">
                       <span className="text-slate-400">Pelanggan:</span>
-                      <span className="font-bold text-slate-800">{notaData.customerName}</span>
+                      <span className="font-bold text-slate-800">
+                        {notaData.customerName}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-400">No WhatsApp:</span>
-                      <span className="font-bold text-slate-850">{notaData.customerWhatsApp}</span>
+                      <span className="font-bold text-slate-850">
+                        {notaData.customerWhatsApp}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-400">Metode Bayar:</span>
-                      <span className="font-bold text-slate-850 uppercase">{notaData.paymentMethod}</span>
+                      <span className="font-bold text-slate-850 uppercase">
+                        {notaData.paymentMethod}
+                      </span>
                     </div>
                   </div>
 
                   {/* Items List */}
                   <div className="space-y-3 text-xs">
-                    <span className="font-bold text-slate-400 uppercase tracking-wider text-[10px] block">Rincian Item</span>
+                    <span className="font-bold text-slate-400 uppercase tracking-wider text-[10px] block">
+                      Rincian Item
+                    </span>
                     <div className="divide-y divide-slate-100">
                       {notaData.items.map((item: any, itemIdx: number) => (
-                        <div key={itemIdx} className="py-2 flex justify-between">
+                        <div
+                          key={itemIdx}
+                          className="py-2 flex justify-between"
+                        >
                           <div>
-                            <span className="font-bold text-slate-800">{item.name}</span>
+                            <span className="font-bold text-slate-800">
+                              {item.name}
+                            </span>
                             <p className="text-[10px] text-slate-400">
-                              {item.qty} x Rp {item.unitPrice.toLocaleString("id-ID")}
+                              {item.qty} x Rp{" "}
+                              {item.unitPrice.toLocaleString("id-ID")}
                             </p>
                             {item.addons && item.addons.length > 0 && (
                               <div className="flex gap-1 pt-0.5">
                                 {item.addons.map((a: any, aIdx: number) => (
-                                  <span key={aIdx} className="text-[9px] text-red-500 font-bold bg-red-50 px-1.5 py-0.2 rounded uppercase">
-                                    +{a.type} (+Rp {a.price.toLocaleString("id-ID")})
+                                  <span
+                                    key={aIdx}
+                                    className="text-[9px] text-red-500 font-bold bg-red-50 px-1.5 py-0.2 rounded uppercase"
+                                  >
+                                    +{a.type} (+Rp{" "}
+                                    {a.price.toLocaleString("id-ID")})
                                   </span>
                                 ))}
                               </div>
@@ -458,13 +583,23 @@ function TrackingContent() {
                   <div className="border-t border-dashed border-slate-200 pt-4 space-y-1.5 text-xs">
                     <div className="flex justify-between text-slate-500">
                       <span>Subtotal:</span>
-                      <span>Rp {Math.round(notaData.taxDetails.subtotal).toLocaleString("id-ID")}</span>
+                      <span>
+                        Rp{" "}
+                        {Math.round(
+                          notaData.taxDetails.subtotal,
+                        ).toLocaleString("id-ID")}
+                      </span>
                     </div>
                     <div className="flex justify-between text-slate-500">
                       <span>PPN ({notaData.taxDetails.ppnRate}%):</span>
-                      <span>Rp {Math.round(notaData.taxDetails.ppnAmount).toLocaleString("id-ID")}</span>
+                      <span>
+                        Rp{" "}
+                        {Math.round(
+                          notaData.taxDetails.ppnAmount,
+                        ).toLocaleString("id-ID")}
+                      </span>
                     </div>
-                    
+
                     <div className="flex justify-between items-center text-sm font-extrabold border-t border-slate-100 pt-3">
                       <span className="text-slate-900">Total Pembayaran:</span>
                       <span className="text-red-600 text-lg">
@@ -478,18 +613,26 @@ function TrackingContent() {
                     <p className="text-[10px] text-emerald-600 font-bold bg-emerald-50 py-1.5 px-3 rounded-full inline-block border border-emerald-100">
                       PAID / LUNAS (QRIS)
                     </p>
-                    <p className="text-[10px] text-slate-400 mt-4 italic">"Terima kasih telah mempercayakan dokumen Anda pada Fotocopy Cakrawala."</p>
+                    <p className="text-[10px] text-slate-400 mt-4 italic">
+                      "Terima kasih telah mempercayakan dokumen Anda pada
+                      Fotocopy Cakrawala."
+                    </p>
                   </div>
 
                   {/* Action buttons */}
+                  {/* KEAMANAN: Tombol cetak langsung membuka PDF yang di-generate SERVER-SIDE.
+                      PDF adalah file binary — tidak ada DOM yang bisa diubah via DevTools.
+                      Data selalu diambil langsung dari database, bukan dari modal ini. */}
                   <div className="flex gap-3 pt-4 border-t border-slate-100 justify-end no-print">
-                    <button
-                      type="button"
-                      onClick={() => window.print()}
+                    <a
+                      href={`/api/orders/${notaData.orderCode}/nota-pdf`}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded text-xs font-bold transition-all shadow"
+                      style={{ textDecoration: "none" }}
                     >
-                      Cetak Nota
-                    </button>
+                      <Printer />
+                    </a>
                     <button
                       type="button"
                       onClick={() => {
@@ -501,18 +644,15 @@ function TrackingContent() {
                       Tutup
                     </button>
                   </div>
-
                 </div>
               ) : (
                 <div className="p-8 text-center text-xs text-red-500 font-bold">
                   Gagal memuat data e-nota.
                 </div>
               )}
-
             </div>
           </div>
         )}
-
       </main>
     </div>
   );
@@ -520,14 +660,16 @@ function TrackingContent() {
 
 export default function Tracking() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex flex-col bg-slate-50">
-        <Navbar />
-        <div className="flex-grow flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-4 border-red-600 border-t-transparent"></div>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex flex-col bg-slate-50">
+          <Navbar />
+          <div className="flex-grow flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-4 border-red-600 border-t-transparent"></div>
+          </div>
         </div>
-      </div>
-    }>
+      }
+    >
       <TrackingContent />
     </Suspense>
   );
