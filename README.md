@@ -405,31 +405,6 @@ Counter reward pelanggan diperbarui
 - ✅ **RBAC** — owner vs staff, menu dan akses berbeda
 - ✅ **Upload dokumen print** — Supabase Storage untuk file PDF pelanggan
 
----
-
-## Yang Perlu Dilanjutkan
-
-> Bagian ini untuk anggota tim yang melanjutkan pengembangan.
-
-### 🔴 Prioritas Tinggi
-
-- [ ] **Notif WhatsApp** — kirim konfirmasi pesanan & QR ke nomor WA pelanggan (pertimbangkan Fonnte atau WhatsApp Cloud API)
-- [ ] **Midtrans Production** — ganti `NEXT_MIDTRANS_IS_PRODUCTION=true` dan daftarkan webhook URL di Midtrans Dashboard saat go-live
-
-### 🟡 Prioritas Menengah
-
-- [ ] **Halaman pas foto & undangan** — form khusus layanan tersebut (itemType sudah ada di schema)
-- [ ] **Notifikasi stok menipis** — alert ke owner saat stok di bawah threshold
-- [ ] **Filter & search** di halaman tracking (by tanggal, status)
-
-### 🟢 Nice to Have
-
-- [ ] **PWA / installable** — agar kasir bisa pakai seperti aplikasi native di HP/tablet
-- [ ] **Dark mode** admin panel
-- [ ] **Multi-cabang** — saat toko berkembang
-
----
-
 ## Database Schema
 
 Model utama di `prisma/schema.prisma`:
