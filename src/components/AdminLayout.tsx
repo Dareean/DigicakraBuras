@@ -69,9 +69,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const sidebarLinks = [
     { name: "Dashboard", href: "/admin", icon: <LayoutDashboard className="w-5 h-5" /> },
     { name: "Kasir (POS)", href: "/admin/pos", icon: <Calculator className="w-5 h-5" /> },
-    { name: "Live Orders", href: "/admin/orders", icon: <ClipboardList className="w-5 h-5" /> },
+    { name: "Pesanan Masuk", href: "/admin/orders", icon: <ClipboardList className="w-5 h-5" /> },
     { name: "Katalog ATK", href: "/admin/products", icon: <ShoppingBag className="w-5 h-5" /> },
-    { name: "Bahan & Stok", href: "/admin/inventory", icon: <Boxes className="w-5 h-5" /> },
+    { name: "Stok Barang", href: "/admin/inventory", icon: <Boxes className="w-5 h-5" /> },
     { name: "Pelanggan & Stempel", href: "/admin/customers", icon: <Users className="w-5 h-5" /> },
   ];
 

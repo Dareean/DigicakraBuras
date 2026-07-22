@@ -166,7 +166,7 @@ export default function AdminOrders() {
   };
 
   const getStatusBadge = (order: Order) => {
-    if (order.status === "menunggu_pembayaran" && order.payment?.paymentMethod === "manual_qris" && order.payment?.status === "pending") {
+    if (order.status === "menunggu_pembayaran" && (order.payment?.paymentMethod === "manual_qris" || order.payment?.paymentMethod === "manual_transfer") && order.payment?.status === "pending") {
       return <span className="px-2 py-0.5 bg-yellow-100 text-yellow-800 border border-yellow-300 rounded text-[10px] font-extrabold uppercase animate-pulse">Menunggu Verifikasi</span>;
     }
     switch (order.status) {
@@ -202,7 +202,7 @@ export default function AdminOrders() {
         {/* Title */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">Antrean Live Orders</h1>
+            <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">Antrean Pesanan Masuk</h1>
             <p className="text-slate-500 text-xs mt-0.5">Kelola antrean cetak dokumen online dan transaksi walk-in kasir.</p>
           </div>
           <button
@@ -350,7 +350,7 @@ export default function AdminOrders() {
                             )}
                             {item.itemType === "print_doc" && (
                               <div className="text-slate-400 text-[11px] mt-0.5 space-y-0.5">
-                                <p>Spec: {item.spec.pages} Hal, {item.spec.color === "bw" ? "Hitam Putih" : "Warna"}</p>
+                                <p>Spesifikasi: {item.spec.pages} Hal, {item.spec.color === "bw" ? "Hitam Putih" : "Warna"}</p>
                                 {item.spec.printedPages && (
                                   <p className="text-red-600 font-bold text-[10px]">
                                     Halaman dicetak: {item.spec.printedPages.join(", ")}
@@ -416,14 +416,14 @@ export default function AdminOrders() {
 
                   {order.status === "menunggu_pembayaran" && (
                     <>
-                      {order.payment?.paymentMethod === "manual_qris" && order.payment?.status === "pending" ? (
+                      {(order.payment?.paymentMethod === "manual_qris" || order.payment?.paymentMethod === "manual_transfer") && order.payment?.status === "pending" ? (
                         <div className="space-y-1.5 w-full">
                           <button
                             type="button"
                             onClick={() => setSelectedReceiptImage(order.payment?.paymentGatewayRef || null)}
                             className="w-full py-1.5 px-3 bg-amber-100 hover:bg-amber-250 text-amber-800 border border-amber-300 rounded text-[11px] font-bold transition-all text-center flex items-center justify-center gap-1"
                           >
-                            👁️ Lihat Bukti QRIS
+                            👁️ Lihat Bukti Bayar
                           </button>
                           <button
                             onClick={() => updateOrderStatus(order.id, "diterima")}

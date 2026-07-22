@@ -8,7 +8,7 @@ export async function POST(
   try {
     const { orderCode } = await params;
     const body = await request.json();
-    const { receiptBase64 } = body;
+    const { receiptBase64, paymentMethod = "manual_qris" } = body;
 
     if (!receiptBase64) {
       return NextResponse.json({ error: "Bukti pembayaran tidak boleh kosong" }, { status: 400 });
@@ -30,7 +30,7 @@ export async function POST(
       await prisma.payment.update({
         where: { id: existingPayment.id },
         data: {
-          paymentMethod: "manual_qris",
+          paymentMethod,
           paymentGatewayRef: receiptBase64,
           status: "pending",
         },
@@ -39,7 +39,7 @@ export async function POST(
       await prisma.payment.create({
         data: {
           orderId: order.id,
-          paymentMethod: "manual_qris",
+          paymentMethod,
           paymentGatewayRef: receiptBase64,
           amount: order.totalAmount,
           status: "pending",

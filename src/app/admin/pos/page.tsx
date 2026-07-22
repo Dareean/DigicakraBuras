@@ -544,7 +544,7 @@ export default function AdminPos() {
                   {fetchedOrder.items.map((item: any, idx: number) => (
                     <div key={idx} className="flex justify-between">
                       <span className="truncate max-w-[180px]">
-                        {item.itemType === 'print_doc' ? `Print (${item.spec.pages || 0} hal x ${item.qty} rangkap)` : item.productName}
+                        {item.itemType === 'print_doc' ? `Cetak (${item.spec.pages || 0} hal x ${item.qty} rangkap)` : item.productName}
                       </span>
                       <span className="font-bold">Rp {item.subtotal.toLocaleString("id-ID")}</span>
                     </div>

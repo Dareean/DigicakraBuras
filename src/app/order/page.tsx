@@ -202,6 +202,68 @@ const getAtkVisualDetails = (name: string) => {
   return { icon: "", bg: "bg-red-50 border-red-200 text-red-600" };
 };
 
+// Simple IndexedDB wrapper for storing File objects
+const DB_NAME = "digicakra_order_temp";
+const STORE_NAME = "files";
+
+const openDB = (): Promise<IDBDatabase> => {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, 1);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME, { keyPath: "name" });
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+};
+
+const saveFileToDB = async (file: File): Promise<void> => {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(STORE_NAME, "readwrite");
+    const store = transaction.objectStore(STORE_NAME);
+    const request = store.put({ name: file.name, file });
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+};
+
+const getFileFromDB = async (name: string): Promise<File | null> => {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(STORE_NAME, "readonly");
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.get(name);
+      request.onsuccess = () => {
+        resolve(request.result ? request.result.file : null);
+      };
+      request.onerror = () => reject(request.error);
+    });
+  } catch (e) {
+    console.error("IndexedDB error:", e);
+    return null;
+  }
+};
+
+const clearDB = async (): Promise<void> => {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(STORE_NAME, "readwrite");
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.clear();
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  } catch (e) {
+    console.error("IndexedDB clear error:", e);
+  }
+};
+
 export default function OrderConfig() {
   // Customer identity
   const [fullName, setFullName] = useState("");
@@ -225,6 +287,8 @@ export default function OrderConfig() {
       { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: "power2.out" },
     );
   }, []);
+
+
 
   // Print options
   const [pages, setPages] = useState<number>(1);
@@ -256,6 +320,112 @@ export default function OrderConfig() {
     }, 4500);
   };
 
+  // Restore state from sessionStorage & IndexedDB on mount
+  useEffect(() => {
+    const savedName = sessionStorage.getItem("order_fullName");
+    const savedWhatsapp = sessionStorage.getItem("order_whatsapp");
+    const savedCopies = sessionStorage.getItem("order_copies");
+    const savedColorType = sessionStorage.getItem("order_colorType");
+    const savedHasJilid = sessionStorage.getItem("order_hasJilid");
+    const savedHasLaminating = sessionStorage.getItem("order_hasLaminating");
+    const savedPickupNote = sessionStorage.getItem("order_pickupNote");
+    const savedExcludedPages = sessionStorage.getItem("order_excludedPages");
+    const savedVirtualPagesStr = sessionStorage.getItem("order_virtualPages");
+
+    if (savedName) setFullName(savedName);
+    if (savedWhatsapp) setWhatsapp(savedWhatsapp);
+    if (savedCopies) setCopies(Number(savedCopies));
+    if (savedColorType) setColorType(savedColorType as "bw" | "color");
+    if (savedHasJilid) setHasJilid(savedHasJilid === "true");
+    if (savedHasLaminating) setHasLaminating(savedHasLaminating === "true");
+    if (savedPickupNote) setPickupNote(savedPickupNote);
+    if (savedExcludedPages) setExcludedPages(JSON.parse(savedExcludedPages));
+
+    if (savedVirtualPagesStr) {
+      const parsedPages: VirtualPage[] = JSON.parse(savedVirtualPagesStr);
+      
+      const restoreFiles = async () => {
+        setLoading(true);
+        setLoadingMessage("Memulihkan berkas...");
+        const uniqueFileNames = Array.from(new Set(parsedPages.map(p => p.fileName)));
+        const restoredFilesList: File[] = [];
+        const updatedPages = [...parsedPages];
+
+        for (const fileName of uniqueFileNames) {
+          const fileObj = await getFileFromDB(fileName);
+          if (fileObj) {
+            restoredFilesList.push(fileObj);
+            
+            // Re-generate blob URLs for images
+            if (fileObj.type.startsWith("image/")) {
+              const newObjectUrl = URL.createObjectURL(fileObj);
+              updatedPages.forEach(p => {
+                if (p.fileName === fileName) {
+                  p.previewUrl = newObjectUrl;
+                }
+              });
+            }
+          }
+        }
+
+        setSelectedFiles(restoredFilesList);
+        setVirtualPages(updatedPages);
+        setLoading(false);
+      };
+
+      restoreFiles().catch(err => {
+        console.error("Gagal memulihkan file:", err);
+        setLoading(false);
+      });
+    }
+  }, []);
+
+  // Save state to sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem("order_fullName", fullName);
+  }, [fullName]);
+
+  useEffect(() => {
+    sessionStorage.setItem("order_whatsapp", whatsapp);
+  }, [whatsapp]);
+
+  useEffect(() => {
+    sessionStorage.setItem("order_copies", String(copies));
+  }, [copies]);
+
+  useEffect(() => {
+    sessionStorage.setItem("order_colorType", colorType);
+  }, [colorType]);
+
+  useEffect(() => {
+    sessionStorage.setItem("order_hasJilid", String(hasJilid));
+  }, [hasJilid]);
+
+  useEffect(() => {
+    sessionStorage.setItem("order_hasLaminating", String(hasLaminating));
+  }, [hasLaminating]);
+
+  useEffect(() => {
+    sessionStorage.setItem("order_pickupNote", pickupNote);
+  }, [pickupNote]);
+
+  useEffect(() => {
+    sessionStorage.setItem("order_excludedPages", JSON.stringify(excludedPages));
+  }, [excludedPages]);
+
+  useEffect(() => {
+    if (virtualPages.length > 0) {
+      // Strip blob URLs to avoid storing stale URLs
+      const pagesToStore = virtualPages.map(p => ({
+        ...p,
+        previewUrl: p.previewUrl.startsWith("blob:") ? "" : p.previewUrl
+      }));
+      sessionStorage.setItem("order_virtualPages", JSON.stringify(pagesToStore));
+    } else {
+      sessionStorage.removeItem("order_virtualPages");
+    }
+  }, [virtualPages]);
+
   useEffect(() => {
     // Load ATK items if any
     const stored = localStorage.getItem("atk_cart");
@@ -273,6 +443,15 @@ export default function OrderConfig() {
       setLoading(true);
       setLoadingMessage("Membaca berkas...");
       const files = Array.from(e.target.files);
+
+      for (const file of files) {
+        try {
+          await saveFileToDB(file);
+        } catch (dbErr) {
+          console.error("Gagal menyimpan ke IndexedDB:", dbErr);
+        }
+      }
+
       setSelectedFiles((prev) => [...prev, ...files]);
       const newPages: VirtualPage[] = [];
 
@@ -552,6 +731,9 @@ export default function OrderConfig() {
 
         // Clear local storage cart
         localStorage.removeItem("atk_cart");
+        // Clear session storage and IndexedDB
+        sessionStorage.clear();
+        await clearDB();
         // Redirect to checkout payment
         window.location.href = `/checkout/${data.orderCode}`;
       } else {
@@ -820,7 +1002,11 @@ export default function OrderConfig() {
                     onClick={() => {
                       setVirtualPages([]);
                       setExcludedPages([]);
+                      setSelectedFiles([]);
                       setPages(1);
+                      clearDB();
+                      sessionStorage.removeItem("order_virtualPages");
+                      sessionStorage.removeItem("order_excludedPages");
                     }}
                     className="text-xs text-slate-400 hover:text-red-500 font-bold hover:underline"
                   >
@@ -1137,7 +1323,7 @@ export default function OrderConfig() {
                 {loadingMessage}
               </>
             ) : (
-              "Lanjut ke Checkout"
+              "Lanjut ke Selesaikan Pembayaran"
             )}
           </button>
         </form>

@@ -433,7 +433,7 @@ export default function Home() {
             }}
             className="w-full py-2.5 px-4 bg-red-600 text-white text-xs font-bold text-center rounded-md hover:bg-red-700 transition-all shadow-md"
           >
-            Checkout & Ambil Toko
+            Bayar & Ambil di Toko
           </button>
         </div>
       )}
