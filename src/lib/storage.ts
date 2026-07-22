@@ -49,7 +49,7 @@ function getStorageClient() {
  * @returns Path file di storage (disimpan ke DB sebagai fileUrl)
  */
 export async function uploadPrintDocument(
-  fileBuffer: Buffer,
+  fileBuffer: Uint8Array,
   originalFilename: string,
   orderId: number
 ): Promise<string> {
@@ -124,7 +124,7 @@ export async function deletePrintDocumentsByOrder(orderId: number): Promise<void
  * @returns Public URL gambar yang bisa langsung dipakai di <img src>
  */
 export async function uploadProductImage(
-  fileBuffer: Buffer,
+  fileBuffer: Uint8Array,
   originalFilename: string,
   contentType: string
 ): Promise<string> {

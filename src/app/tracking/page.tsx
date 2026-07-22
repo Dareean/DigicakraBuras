@@ -625,7 +625,7 @@ function TrackingContent() {
                       Data selalu diambil langsung dari database, bukan dari modal ini. */}
                   <div className="flex gap-3 pt-4 border-t border-slate-100 justify-end no-print">
                     <a
-                      href={`/api/orders/${notaData.orderCode}/nota-pdf`}
+                      href={`/nota/${notaData.orderCode}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded text-xs font-bold transition-all shadow"

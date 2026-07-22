@@ -30,7 +30,7 @@ export async function POST(request: Request) {
 
     const fileUrls: string[] = [];
     for (const file of files) {
-      const buffer = Buffer.from(await file.arrayBuffer());
+      const buffer = new Uint8Array(await file.arrayBuffer());
       const path = await uploadPrintDocument(buffer, file.name, orderId);
       fileUrls.push(path);
     }

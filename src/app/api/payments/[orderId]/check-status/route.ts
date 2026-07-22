@@ -18,8 +18,10 @@
 
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { coreApi } from "@/lib/midtrans";
+import { getCoreApi } from "@/lib/midtrans";
 import { deductInventoryAndLoyalty } from "@/app/api/orders/route";
+
+export const dynamic = "force-dynamic";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -85,7 +87,7 @@ export async function GET(
     }
 
     // 4. Query status transaksi ke Midtrans
-    const midtransStatus = (await (coreApi as any).transaction.status(
+    const midtransStatus = (await (await getCoreApi()).transaction.status(
       payment.paymentGatewayRef
     )) as MidtransStatusResponse;
 

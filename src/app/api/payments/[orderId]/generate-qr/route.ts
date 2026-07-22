@@ -15,7 +15,7 @@
 
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { coreApi } from "@/lib/midtrans";
+import { getCoreApi } from "@/lib/midtrans";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -101,7 +101,7 @@ export async function POST(
     };
 
     const midtransResponse =
-      (await coreApi.charge(chargePayload)) as MidtransChargeResponse;
+      (await (await getCoreApi()).charge(chargePayload)) as MidtransChargeResponse;
 
     // 5. Ekstrak QR code URL dari response Midtrans
     const qrAction = midtransResponse.actions?.find(

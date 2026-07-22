@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     }
 
     // Sign session token
-    const token = signToken({
+    const token = await signToken({
       userId: admin.id,
       email: admin.email,
       name: admin.name,

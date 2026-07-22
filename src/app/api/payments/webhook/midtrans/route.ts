@@ -17,7 +17,6 @@
  */
 
 import { NextResponse } from "next/server";
-import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
 import { deductInventoryAndLoyalty } from "@/app/api/orders/route";
 
@@ -54,12 +53,16 @@ interface MidtransNotification {
  * Verifikasi keaslian notifikasi dari Midtrans menggunakan SHA512 hash.
  * Format: SHA512(order_id + status_code + gross_amount + server_key)
  */
-function verifyMidtransSignature(notification: MidtransNotification): boolean {
+async function verifyMidtransSignature(notification: MidtransNotification): Promise<boolean> {
   const SERVER_KEY = process.env.NEXT_MIDTRANS_SERVER_KEY;
   if (!SERVER_KEY) return false;
 
   const raw = `${notification.order_id}${notification.status_code}${notification.gross_amount}${SERVER_KEY}`;
-  const expectedHash = crypto.createHash("sha512").update(raw).digest("hex");
+  const encoder = new TextEncoder();
+  const hashBuffer = await crypto.subtle.digest("SHA-512", encoder.encode(raw));
+  const expectedHash = Array.from(new Uint8Array(hashBuffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 
   return expectedHash === notification.signature_key;
 }
@@ -77,7 +80,7 @@ export async function POST(request: Request) {
     } = notification;
 
     // 1. Verifikasi signature Midtrans
-    if (!verifyMidtransSignature(notification)) {
+    if (!(await verifyMidtransSignature(notification))) {
       console.warn("[webhook/midtrans] Signature tidak valid untuk order:", orderCode);
       return NextResponse.json({ error: "Signature tidak valid" }, { status: 403 });
     }
