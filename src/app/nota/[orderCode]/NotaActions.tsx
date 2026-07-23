@@ -2,12 +2,23 @@
 
 import { Printer } from "lucide-react";
 
+/**
+ * Client Component untuk tombol-tombol interaktif di nota.
+ *
+ * KEAMANAN: Tombol "Cetak Nota" membuka URL PDF yang di-generate SERVER-SIDE.
+ * PDF adalah file binary — browser DevTools tidak bisa mengubah isi PDF
+ * seperti yang bisa dilakukan pada HTML DOM.
+ */
 export default function NotaActions({ orderCode }: { orderCode: string }) {
+  const pdfUrl = `/api/orders/${orderCode}/nota-pdf`;
+
   return (
     <div className="no-print" style={{ marginTop: 16 }}>
-      {/* Cetak langsung menggunakan print dialog browser */}
-      <button
-        onClick={() => window.print()}
+      {/* Buka PDF di tab baru — data langsung dari server, tidak bisa dimanipulasi */}
+      <a
+        href={pdfUrl}
+        target="_blank"
+        rel="noopener noreferrer"
         style={{
           display: "block",
           width: "100%",
@@ -22,11 +33,12 @@ export default function NotaActions({ orderCode }: { orderCode: string }) {
           cursor: "pointer",
           letterSpacing: "0.5px",
           textAlign: "center",
+          textDecoration: "none",
           boxSizing: "border-box",
         }}
       >
-        <Printer style={{ display: "inline-block", verticalAlign: "middle" }} />
-      </button>
+        <Printer />
+      </a>
       <button
         onClick={() => window.close()}
         style={{
@@ -49,4 +61,3 @@ export default function NotaActions({ orderCode }: { orderCode: string }) {
     </div>
   );
 }
-
