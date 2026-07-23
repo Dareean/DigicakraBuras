@@ -30,7 +30,8 @@ const getPdfPageCount = async (file: File): Promise<number> => {
         return;
       }
       const script = document.createElement("script");
-      script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js";
+      script.src =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js";
       script.onload = () => {
         const pdfjs = (window as any).pdfjsLib;
         pdfjs.GlobalWorkerOptions.workerSrc =
@@ -313,8 +314,6 @@ export default function OrderConfig() {
     );
   }, []);
 
-
-
   // Print options
   const [pages, setPages] = useState<number>(1);
   const [copies, setCopies] = useState<number>(1);
@@ -368,11 +367,13 @@ export default function OrderConfig() {
 
     if (savedVirtualPagesStr) {
       const parsedPages: VirtualPage[] = JSON.parse(savedVirtualPagesStr);
-      
+
       const restoreFiles = async () => {
         setLoading(true);
         setLoadingMessage("Memulihkan berkas...");
-        const uniqueFileNames = Array.from(new Set(parsedPages.map(p => p.fileName)));
+        const uniqueFileNames = Array.from(
+          new Set(parsedPages.map((p) => p.fileName)),
+        );
         const restoredFilesList: File[] = [];
         const updatedPages = [...parsedPages];
 
@@ -380,11 +381,11 @@ export default function OrderConfig() {
           const fileObj = await getFileFromDB(fileName);
           if (fileObj) {
             restoredFilesList.push(fileObj);
-            
+
             // Re-generate blob URLs for images
             if (fileObj.type.startsWith("image/")) {
               const newObjectUrl = URL.createObjectURL(fileObj);
-              updatedPages.forEach(p => {
+              updatedPages.forEach((p) => {
                 if (p.fileName === fileName) {
                   p.previewUrl = newObjectUrl;
                 }
@@ -398,7 +399,7 @@ export default function OrderConfig() {
         setLoading(false);
       };
 
-      restoreFiles().catch(err => {
+      restoreFiles().catch((err) => {
         console.error("Gagal memulihkan file:", err);
         setLoading(false);
       });
@@ -435,17 +436,23 @@ export default function OrderConfig() {
   }, [pickupNote]);
 
   useEffect(() => {
-    sessionStorage.setItem("order_excludedPages", JSON.stringify(excludedPages));
+    sessionStorage.setItem(
+      "order_excludedPages",
+      JSON.stringify(excludedPages),
+    );
   }, [excludedPages]);
 
   useEffect(() => {
     if (virtualPages.length > 0) {
       // Strip blob URLs to avoid storing stale URLs
-      const pagesToStore = virtualPages.map(p => ({
+      const pagesToStore = virtualPages.map((p) => ({
         ...p,
-        previewUrl: p.previewUrl.startsWith("blob:") ? "" : p.previewUrl
+        previewUrl: p.previewUrl.startsWith("blob:") ? "" : p.previewUrl,
       }));
-      sessionStorage.setItem("order_virtualPages", JSON.stringify(pagesToStore));
+      sessionStorage.setItem(
+        "order_virtualPages",
+        JSON.stringify(pagesToStore),
+      );
     } else {
       sessionStorage.removeItem("order_virtualPages");
     }
