@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import { SquarePen, Trash2 } from "lucide-react";
 
@@ -27,14 +27,25 @@ export default function AdminProducts() {
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [dragActive, setDragActive] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [price, setPrice] = useState(0);
   const [stockQty, setStockQty] = useState(0);
   const [category, setCategory] = useState("Alat Tulis");
+  const [categories, setCategories] = useState<string[]>([]);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [showAddCategory, setShowAddCategory] = useState(false);
   const [isActive, setIsActive] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
 
-  const showToast = (message: string, type: "success" | "error" = "success") => {
+  const showToast = (
+    message: string,
+    type: "success" | "error" = "success",
+  ) => {
     setToast({ message, type });
     setTimeout(() => {
       setToast(null);
@@ -61,11 +72,63 @@ export default function AdminProducts() {
 
   useEffect(() => {
     loadSessionAndProducts();
+    // load categories from localStorage or defaults
+    const defaults = [
+      "Alat Tulis",
+      "Pena & Pensil",
+      "Penghapus & Koreksi",
+      "Penggaris & Pengukur",
+      "Kertas & Buku",
+    ];
+    try {
+      const saved =
+        typeof window !== "undefined"
+          ? localStorage.getItem("atk_categories")
+          : null;
+      if (saved) {
+        const parsed = JSON.parse(saved) as string[];
+        const merged = Array.from(new Set([...defaults, ...parsed]));
+        setCategories(merged);
+        if (!merged.includes(category)) setCategory(merged[0]);
+      } else {
+        setCategories(defaults);
+      }
+    } catch (e) {
+      setCategories([
+        "Alat Tulis",
+        "Pena & Pensil",
+        "Penghapus & Koreksi",
+        "Penggaris & Pengukur",
+        "Kertas & Buku",
+      ]);
+    }
   }, []);
 
   const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setImageFile(e.target.files[0]);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0];
+      setImageFile(file);
     }
   };
 
@@ -124,20 +187,23 @@ export default function AdminProducts() {
       }
 
       const isEdit = !!editingProduct;
-      const url = isEdit ? `/api/admin/products/${editingProduct.id}` : "/api/admin/products";
+      const url = isEdit
+        ? `/api/admin/products/${editingProduct.id}`
+        : "/api/admin/products";
       const method = isEdit ? "PUT" : "POST";
 
-      const payload = isEdit && userRole === "staff"
-        ? { stockQty: Number(stockQty) } // Staff can only update stock
-        : {
-            name,
-            description,
-            imageUrl: finalImageUrl,
-            price: Number(price),
-            stockQty: Number(stockQty),
-            category,
-            isActive,
-          };
+      const payload =
+        isEdit && userRole === "staff"
+          ? { stockQty: Number(stockQty) } // Staff can only update stock
+          : {
+              name,
+              description,
+              imageUrl: finalImageUrl,
+              price: Number(price),
+              stockQty: Number(stockQty),
+              category,
+              isActive,
+            };
 
       const response = await fetch(url, {
         method,
@@ -167,7 +233,9 @@ export default function AdminProducts() {
       return;
     }
 
-    if (confirm("Apakah Anda yakin ingin menonaktifkan produk ini dari katalog?")) {
+    if (
+      confirm("Apakah Anda yakin ingin menonaktifkan produk ini dari katalog?")
+    ) {
       try {
         const response = await fetch(`/api/admin/products/${id}`, {
           method: "DELETE",
@@ -189,12 +257,15 @@ export default function AdminProducts() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        
         {/* Title & Add button */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">Katalog ATK</h1>
-            <p className="text-slate-500 text-xs mt-0.5">Kelola data perlengkapan dan persediaan ATK toko.</p>
+            <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">
+              Katalog ATK
+            </h1>
+            <p className="text-slate-500 text-xs mt-0.5">
+              Kelola data perlengkapan dan persediaan ATK toko.
+            </p>
           </div>
           {userRole === "owner" && (
             <button
@@ -236,30 +307,41 @@ export default function AdminProducts() {
                             alt={p.name}
                             className="w-full h-full object-cover"
                             onError={(e) => {
-                              (e.target as HTMLImageElement).src = `https://placehold.co/100x100/e2e8f0/475569?text=ATK`;
+                              (e.target as HTMLImageElement).src =
+                                `https://placehold.co/100x100/e2e8f0/475569?text=ATK`;
                             }}
                           />
                         </div>
                         <div>
-                          <span className="font-bold text-slate-800 block">{p.name}</span>
-                          <span className="text-[10px] text-slate-400 mt-0.5 line-clamp-1">{p.description || "-"}</span>
+                          <span className="font-bold text-slate-800 block">
+                            {p.name}
+                          </span>
+                          <span className="text-[10px] text-slate-400 mt-0.5 line-clamp-1">
+                            {p.description || "-"}
+                          </span>
                         </div>
                       </td>
                       <td className="px-6 py-4">{p.category}</td>
                       <td className="px-6 py-4 font-bold text-slate-900">
                         Rp {p.price.toLocaleString("id-ID")}
                       </td>
-                      <td className={`px-6 py-4 text-center font-bold ${p.stockQty <= 10 ? "text-amber-600" : "text-slate-800"}`}>
+                      <td
+                        className={`px-6 py-4 text-center font-bold ${p.stockQty <= 10 ? "text-amber-600" : "text-slate-800"}`}
+                      >
                         {p.stockQty}
                       </td>
                       <td className="px-6 py-4 text-center">
                         {p.isActive ? (
-                          <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded text-[9px] font-bold uppercase border border-emerald-100">Aktif</span>
+                          <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded text-[9px] font-bold uppercase border border-emerald-100">
+                            Aktif
+                          </span>
                         ) : (
-                          <span className="px-2 py-0.5 bg-slate-100 text-slate-400 rounded text-[9px] font-bold uppercase">Nonaktif</span>
+                          <span className="px-2 py-0.5 bg-slate-100 text-slate-400 rounded text-[9px] font-bold uppercase">
+                            Nonaktif
+                          </span>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-right space-x-2">
+                      <td className="px-6 py-4 text-right flex space-x-2">
                         <button
                           onClick={() => openEditModal(p)}
                           className="text-xs text-blue-600 hover:text-blue-800 hover:underline font-bold"
@@ -288,18 +370,18 @@ export default function AdminProducts() {
       {showModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-2xl max-w-md w-full p-6 space-y-4 border-t-8 border-t-red-600">
-            
             <div>
               <h3 className="text-base font-bold text-slate-800">
                 {editingProduct ? "Ubah Produk" : "Tambah Produk Baru"}
               </h3>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                {userRole === "staff" ? "Sebagai staf, Anda hanya dapat mengubah stok." : "Lengkapi data spesifikasi produk ATK."}
+                {userRole === "staff"
+                  ? "Sebagai staf, Anda hanya dapat mengubah stok."
+                  : "Lengkapi data spesifikasi produk ATK."}
               </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-              
               <div>
                 <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
                   Nama Produk
@@ -330,46 +412,78 @@ export default function AdminProducts() {
                 <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
                   Foto Produk
                 </label>
-                
+
                 {/* Image Preview */}
                 {(imageFile || imageUrl) && (
                   <div className="mb-2 relative w-20 h-20 rounded border border-slate-200 overflow-hidden bg-slate-50 flex items-center justify-center">
                     <img
-                      src={imageFile ? URL.createObjectURL(imageFile) : imageUrl}
+                      src={
+                        imageFile ? URL.createObjectURL(imageFile) : imageUrl
+                      }
                       alt="Preview"
                       className="object-cover w-full h-full"
                     />
-                    {imageFile && !(editingProduct !== null && userRole === "staff") && (
-                      <button
-                        type="button"
-                        onClick={() => setImageFile(null)}
-                        className="absolute top-0 right-0 bg-red-650 text-white w-4.5 h-4.5 text-[9px] font-bold rounded-bl flex items-center justify-center hover:bg-red-700 cursor-pointer"
-                        title="Hapus gambar terpilih"
-                      >
-                        ✕
-                      </button>
-                    )}
+                    {imageFile &&
+                      !(editingProduct !== null && userRole === "staff") && (
+                        <button
+                          type="button"
+                          onClick={() => setImageFile(null)}
+                          className="absolute top-0 right-0 bg-red-650 text-white w-4.5 h-4.5 text-[9px] font-bold rounded-bl flex items-center justify-center hover:bg-red-700 cursor-pointer"
+                          title="Hapus gambar terpilih"
+                        >
+                          ✕
+                        </button>
+                      )}
                   </div>
                 )}
 
-                {/* File Input */}
+                {/* File Input with Drag & Drop */}
                 {!(editingProduct !== null && userRole === "staff") ? (
-                  <div className="flex items-center gap-2">
-                    <label className="flex items-center justify-center px-3.5 py-1.5 border border-slate-200 rounded text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 cursor-pointer transition-all shadow-sm">
-                      <span>Pilih Foto</span>
+                  <div>
+                    <div
+                      onDragOver={handleDragOver}
+                      onDragEnter={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                      className={`flex items-center gap-2 p-3 border rounded transition-colors ${dragActive ? "border-dashed border-red-600 bg-red-50" : "border-slate-200 bg-white"}`}
+                      style={{ cursor: "pointer" }}
+                      onClick={() => fileInputRef.current?.click()}
+                    >
                       <input
+                        ref={fileInputRef}
                         type="file"
                         accept="image/*"
                         onChange={handleImageFileChange}
                         className="hidden"
                       />
-                    </label>
-                    <span className="text-[10px] text-slate-400 truncate max-w-[200px]">
-                      {imageFile ? imageFile.name : "Format JPG/PNG, maks. 5MB"}
-                    </span>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          fileInputRef.current?.click();
+                        }}
+                        className="px-3.5 py-1.5 border border-slate-200 rounded text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 transition-all shadow-sm"
+                      >
+                        Pilih Foto
+                      </button>
+
+                      <span className="text-[10px] text-slate-400 truncate max-w-[200px]">
+                        {imageFile
+                          ? imageFile.name
+                          : dragActive
+                            ? "Lepas untuk mengunggah"
+                            : "Tarik & lepas gambar di sini, atau klik untuk memilih"}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-1">
+                      Format JPG/PNG, maks. 5MB
+                    </p>
                   </div>
                 ) : (
-                  <p className="text-xs text-slate-400 font-medium">Hanya owner yang dapat mengubah foto</p>
+                  <p className="text-xs text-slate-400 font-medium">
+                    Hanya owner yang dapat mengubah foto
+                  </p>
                 )}
               </div>
 
@@ -407,18 +521,67 @@ export default function AdminProducts() {
                   <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
                     Kategori
                   </label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    disabled={editingProduct !== null && userRole === "staff"}
-                    className="w-full px-3 h-9 border border-slate-200 rounded focus:outline-none focus:border-red-500 font-medium bg-white disabled:bg-slate-100 disabled:text-slate-400"
-                  >
-                    <option value="Alat Tulis">Alat Tulis</option>
-                    <option value="Pena & Pensil">Pena & Pensil</option>
-                    <option value="Penghapus & Koreksi">Penghapus & Koreksi</option>
-                    <option value="Penggaris & Pengukur">Penggaris & Pengukur</option>
-                    <option value="Kertas & Buku">Kertas & Buku</option>
-                  </select>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      disabled={editingProduct !== null && userRole === "staff"}
+                      className="w-full px-3 h-9 border border-slate-200 rounded focus:outline-none focus:border-red-500 font-medium bg-white disabled:bg-slate-100 disabled:text-slate-400"
+                    >
+                      {categories.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowAddCategory((s) => !s)}
+                      className="px-3 py-1 text-xs rounded border border-slate-200 bg-white hover:bg-slate-50"
+                    >
+                      + Kategori
+                    </button>
+                  </div>
+
+                  {showAddCategory && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        placeholder="Nama kategori baru"
+                        className="w-full px-3 h-9 border border-slate-200 rounded focus:outline-none focus:border-red-500 font-medium bg-white"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const name = newCategoryName.trim();
+                          if (!name) return;
+                          if (categories.includes(name)) {
+                            setCategory(name);
+                            setShowAddCategory(false);
+                            setNewCategoryName("");
+                            return;
+                          }
+                          const updated = [...categories, name];
+                          setCategories(updated);
+                          setCategory(name);
+                          setNewCategoryName("");
+                          setShowAddCategory(false);
+                          try {
+                            localStorage.setItem(
+                              "atk_categories",
+                              JSON.stringify(updated),
+                            );
+                          } catch (e) {}
+                        }}
+                        className="px-3 py-1 bg-red-600 text-white rounded text-xs font-bold"
+                      >
+                        Tambah
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {userRole === "owner" && (
@@ -433,7 +596,9 @@ export default function AdminProducts() {
                         onChange={(e) => setIsActive(e.target.checked)}
                         className="rounded border-slate-350 text-red-600 focus:ring-red-500 h-4 w-4"
                       />
-                      <span className="font-bold text-slate-700">Tampilkan di katalog</span>
+                      <span className="font-bold text-slate-700">
+                        Tampilkan di katalog
+                      </span>
                     </label>
                   </div>
                 )}
@@ -459,7 +624,6 @@ export default function AdminProducts() {
                   Batal
                 </button>
               </div>
-
             </form>
           </div>
         </div>
@@ -471,14 +635,34 @@ export default function AdminProducts() {
           <div className="mr-3 flex-shrink-0">
             {toast.type === "success" ? (
               <div className="bg-emerald-500/20 text-emerald-400 p-1.5 rounded-full">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="3"
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
               </div>
             ) : (
               <div className="bg-red-500/20 text-red-400 p-1.5 rounded-full">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="3"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </div>
             )}

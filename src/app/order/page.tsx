@@ -22,34 +22,59 @@ interface VirtualPage {
 }
 
 const getPdfPageCount = async (file: File): Promise<number> => {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = function (e) {
-      try {
-        const arr = new Uint8Array(e.target?.result as ArrayBuffer);
-        const text = new TextDecoder("ascii").decode(arr);
-        const matches = text.match(/\/Count\s+(\d+)/g);
-        if (matches) {
-          const lastMatch = matches[matches.length - 1];
-          const match = lastMatch.match(/\d+/);
-          if (match) {
-            resolve(parseInt(match[0], 10));
+  // Prefer using PDF.js to get an accurate page count. Fallback to text heuristic if PDF.js fails.
+  try {
+    const pdfjsLib = await new Promise<any>((resolve, reject) => {
+      if ((window as any).pdfjsLib) {
+        resolve((window as any).pdfjsLib);
+        return;
+      }
+      const script = document.createElement("script");
+      script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js";
+      script.onload = () => {
+        const pdfjs = (window as any).pdfjsLib;
+        pdfjs.GlobalWorkerOptions.workerSrc =
+          "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
+        resolve(pdfjs);
+      };
+      script.onerror = () => reject(new Error("Failed to load PDF.js"));
+      document.head.appendChild(script);
+    });
+
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    return pdf.numPages || 1;
+  } catch (err) {
+    // Fallback: original text-based heuristic (less reliable)
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        try {
+          const arr = new Uint8Array(e.target?.result as ArrayBuffer);
+          const text = new TextDecoder("ascii").decode(arr);
+          const matches = text.match(/\/Count\s+(\d+)/g);
+          if (matches) {
+            const lastMatch = matches[matches.length - 1];
+            const match = lastMatch.match(/\d+/);
+            if (match) {
+              resolve(parseInt(match[0], 10));
+              return;
+            }
+          }
+          const pageTypeMatches = text.match(/\/Type\s*\/Page\b/g);
+          if (pageTypeMatches) {
+            resolve(pageTypeMatches.length);
             return;
           }
+          resolve(1);
+        } catch (err) {
+          resolve(1);
         }
-        const pageTypeMatches = text.match(/\/Type\s*\/Page\b/g);
-        if (pageTypeMatches) {
-          resolve(pageTypeMatches.length);
-          return;
-        }
-        resolve(1);
-      } catch (err) {
-        resolve(1);
-      }
-    };
-    reader.onerror = () => resolve(1);
-    reader.readAsArrayBuffer(file);
-  });
+      };
+      reader.onerror = () => resolve(1);
+      reader.readAsArrayBuffer(file);
+    });
+  }
 };
 
 const renderPdfThumbnails = async (

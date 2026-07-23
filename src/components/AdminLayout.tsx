@@ -13,7 +13,7 @@ import {
   LineChart,
   LogOut,
   Menu,
-  X
+  X,
 } from "lucide-react";
 
 interface AdminUser {
@@ -23,7 +23,11 @@ interface AdminUser {
   role: string;
 }
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const [user, setUser] = useState<AdminUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -67,12 +71,36 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   const sidebarLinks = [
-    { name: "Dashboard", href: "/admin", icon: <LayoutDashboard className="w-5 h-5" /> },
-    { name: "Kasir (POS)", href: "/admin/pos", icon: <Calculator className="w-5 h-5" /> },
-    { name: "Pesanan Masuk", href: "/admin/orders", icon: <ClipboardList className="w-5 h-5" /> },
-    { name: "Katalog ATK", href: "/admin/products", icon: <ShoppingBag className="w-5 h-5" /> },
-    { name: "Stok Barang", href: "/admin/inventory", icon: <Boxes className="w-5 h-5" /> },
-    { name: "Pelanggan & Stempel", href: "/admin/customers", icon: <Users className="w-5 h-5" /> },
+    {
+      name: "Dashboard",
+      href: "/admin",
+      icon: <LayoutDashboard className="w-5 h-5" />,
+    },
+    {
+      name: "Kasir (POS)",
+      href: "/admin/pos",
+      icon: <Calculator className="w-5 h-5" />,
+    },
+    {
+      name: "Pesanan Masuk",
+      href: "/admin/orders",
+      icon: <ClipboardList className="w-5 h-5" />,
+    },
+    {
+      name: "Katalog ATK",
+      href: "/admin/products",
+      icon: <ShoppingBag className="w-5 h-5" />,
+    },
+    {
+      name: "Stok Barang",
+      href: "/admin/inventory",
+      icon: <Boxes className="w-5 h-5" />,
+    },
+    {
+      name: "Pelanggan & Stempel",
+      href: "/admin/customers",
+      icon: <Users className="w-5 h-5" />,
+    },
   ];
 
   // RBAC Link addition: Only Owner can access Taxes / Pajak
@@ -80,13 +108,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     sidebarLinks.push({
       name: "Pajak & Keuangan",
       href: "/admin/tax",
-      icon: <LineChart className="w-5 h-5" />
+      icon: <LineChart className="w-5 h-5" />,
     });
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col md:flex-row">
-      
+    <div className="min-h-screen  bg-slate-100 flex flex-col md:flex-row">
       {/* Sticky Top Bar on Mobile */}
       <div className="sticky top-0 z-40 md:hidden bg-slate-900 border-b border-slate-800 h-16 flex items-center justify-between px-6 text-white w-full">
         <div className="flex items-center space-x-2.5">
@@ -96,7 +123,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           >
             <Menu className="h-6 w-6" />
           </button>
-          <span className="font-extrabold text-base tracking-wider text-white">DIGICAKRA</span>
+          <span className="font-extrabold text-base tracking-wider text-white">
+            DIGICAKRA
+          </span>
         </div>
         <span className="text-[9px] font-black text-red-500 uppercase tracking-widest bg-red-950/45 px-2 py-0.5 rounded border border-red-900/30">
           POS/Admin
@@ -107,14 +136,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {sidebarOpen && (
         <div className="fixed inset-0 z-50 md:hidden flex">
           {/* Backdrop blur overlay */}
-          <div onClick={() => setSidebarOpen(false)} className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm transition-opacity duration-300"></div>
+          <div
+            onClick={() => setSidebarOpen(false)}
+            className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm transition-opacity duration-300"
+          ></div>
 
           {/* Collapsible Sidebar content */}
           <aside className="absolute inset-y-0 left-0 w-64 bg-slate-900 border-r border-slate-800 flex flex-col justify-between text-slate-400 transform transition-transform duration-300 ease-out translate-x-0 shadow-2xl">
             <div>
               {/* Logo & close button */}
               <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-950/20">
-                <span className="text-xl font-black text-white tracking-wider">DIGICAKRA</span>
+                <span className="text-xl font-black text-white tracking-wider">
+                  DIGICAKRA
+                </span>
                 <button
                   type="button"
                   onClick={() => setSidebarOpen(false)}
@@ -131,7 +165,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </div>
                 <div>
                   <p className="font-bold text-slate-200">{user?.name}</p>
-                  <p className="text-[10px] text-slate-400 capitalize">{user?.role}</p>
+                  <p className="text-[10px] text-slate-400 capitalize">
+                    {user?.role}
+                  </p>
                 </div>
               </div>
 
@@ -172,11 +208,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       )}
 
       {/* Static Sidebar (Desktop only) */}
-      <aside className="hidden md:flex md:w-64 bg-slate-900 text-slate-400 flex-col justify-between border-r border-slate-800 flex-shrink-0">
+      <aside className="hidden h-full md:fixed md:flex md:w-64 bg-slate-900 text-slate-400 flex-col justify-between border-r border-slate-800 flex-shrink-0">
         <div>
           {/* Logo */}
           <div className="p-6 border-b border-slate-800 flex justify-between items-center">
-            <span className="text-xl font-bold text-white tracking-wider">DIGICAKRA</span>
+            <span className="text-xl font-bold text-white tracking-wider">
+              DIGICAKRA
+            </span>
             <span className="text-[10px] font-bold text-red-500 uppercase tracking-widest bg-red-950/40 px-2 py-0.5 rounded border border-red-900/30">
               POS/Admin
             </span>
@@ -189,7 +227,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
             <div>
               <p className="font-bold text-slate-200">{user?.name}</p>
-              <p className="text-[10px] text-slate-400 capitalize">{user?.role}</p>
+              <p className="text-[10px] text-slate-400 capitalize">
+                {user?.role}
+              </p>
             </div>
           </div>
 
@@ -228,7 +268,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </aside>
 
       {/* Main content frame */}
-      <main className="grow p-6 md:p-8 overflow-y-auto max-w-6xl mx-auto w-full">
+      <main className="grow p-6 md:p-8 overflow-y-auto max-w-6xl mx-auto w-full md:mr-40">
         {children}
       </main>
     </div>
